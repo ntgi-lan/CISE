@@ -1,0 +1,16 @@
+# Python bytecode and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local runtime state (created on first run of the server)
+data/studyspace.db
+data/*.db
+*.log
+
+# Tooling and operating-system noise
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+Thumbs.db

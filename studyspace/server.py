@@ -1,0 +1,364 @@
+"""HTTP layer for StudySpace: routing, validation and error mapping.
+
+``ThreadingHTTPServer`` serves the JSON API under ``/api/`` and the static
+single-page front-end from ``studyspace/web/``. Validation errors are raised as
+:class:`~studyspace.rules.RuleViolation` and translated into the JSON error
+contract ``{"error": {"code": ..., "message": ...}}``.
+"""
+
+from __future__ import annotations
+
+import json
+import mimetypes
+from collections.abc import Callable
+from datetime import date, datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
+
+from . import __version__
+from .models import BookingRequest, Room
+from .rules import (
+    RuleViolation,
+    check_daily_limit,
+    check_overlap,
+    rooms_free_for_window,
+    validate_booking,
+    validate_search,
+)
+from .storage import BookingStorage, load_rooms
+
+WEB_DIR = Path(__file__).with_name("web")
+MAX_BODY_BYTES = 64 * 1024
+BOOKING_FIELDS = ("room_id", "name", "email", "start", "end")
+
+
+class StudySpaceServer(ThreadingHTTPServer):
+    """Threading HTTP server carrying the application dependencies."""
+
+    daemon_threads = True
+
+    def __init__(
+        self,
+        address: tuple[str, int],
+        storage: BookingStorage,
+        rooms: list[Room],
+        clock: Callable[[], datetime],
+    ) -> None:
+        super().__init__(address, StudySpaceHandler)
+        self.storage = storage
+        self.rooms = rooms
+        self.rooms_by_id = {room.id: room for room in rooms}
+        self.clock = clock
+
+
+class StudySpaceHandler(BaseHTTPRequestHandler):
+    """Request handler for the JSON API and the static front-end."""
+
+    server: StudySpaceServer
+    protocol_version = "HTTP/1.1"
+    server_version = f"StudySpace/{__version__}"
+
+    # -- request entry points ------------------------------------------------
+
+    def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
+        self._dispatch("GET")
+
+    def do_POST(self) -> None:  # noqa: N802
+        self._dispatch("POST")
+
+    def do_DELETE(self) -> None:  # noqa: N802
+        self._dispatch("DELETE")
+
+    def log_message(self, format: str, *args: object) -> None:
+        """Stay quiet under unittest; a deployment would use the logging module."""
+        return
+
+    # -- routing -------------------------------------------------------------
+
+    def _dispatch(self, method: str) -> None:
+        try:
+            parsed = urlsplit(self.path)
+            if parsed.path.startswith("/api/"):
+                self._handle_api(method, parsed.path, parse_qs(parsed.query))
+            elif method == "GET":
+                self._serve_static(parsed.path)
+            else:
+                self._send_error(404, "not_found", "Unknown endpoint.")
+        except RuleViolation as violation:
+            self._send_error(violation.status, violation.code, violation.message)
+        except Exception as error:  # pragma: no cover - defensive last resort
+            self._send_error(500, "internal_error", f"Unexpected server error: {error}")
+
+    def _handle_api(
+        self, method: str, path: str, query: dict[str, list[str]]
+    ) -> None:
+        if path == "/api/health" and method == "GET":
+            self._send_json(200, {"status": "ok", "version": __version__})
+            return
+        if path == "/api/rooms" and method == "GET":
+            self._send_json(200, self._rooms_payload(query))
+            return
+        if path == "/api/bookings":
+            if method == "GET":
+                self._send_json(200, self._bookings_payload(query))
+                return
+            if method == "POST":
+                self._create_booking()
+                return
+        if path.startswith("/api/bookings/") and method == "DELETE":
+            self._delete_booking(path.rsplit("/", 1)[-1])
+            return
+        if path in {"/api/health", "/api/rooms", "/api/bookings"}:
+            self._send_error(
+                405, "method_not_allowed", f"{method} is not supported for {path}."
+            )
+            return
+        self._send_error(404, "not_found", f"Unknown endpoint: {path}")
+
+    # -- room catalogue and search (FR-01, FR-02) ----------------------------
+
+    def _rooms_payload(self, query: dict[str, list[str]]) -> dict[str, object]:
+        has_search = any(
+            key in query for key in ("start", "end", "min_capacity")
+        )
+        if not has_search:
+            rooms = self.server.rooms
+            return {"rooms": [room.to_dict() for room in rooms], "count": len(rooms)}
+
+        start = self._query_datetime(query, "start")
+        end = self._query_datetime(query, "end")
+        min_capacity = self._query_int(query, "min_capacity")
+        validate_search(start, end, min_capacity)
+        bookings = self.server.storage.list_for_date(start.date())
+        free_rooms = rooms_free_for_window(
+            self.server.rooms, bookings, start, end, min_capacity
+        )
+        return {
+            "rooms": [room.to_dict() for room in free_rooms],
+            "count": len(free_rooms),
+        }
+
+    # -- bookings (FR-03 to FR-09) -------------------------------------------
+
+    def _bookings_payload(self, query: dict[str, list[str]]) -> dict[str, object]:
+        values = query.get("date")
+        if values:
+            try:
+                day = date.fromisoformat(values[0])
+            except ValueError as error:
+                raise RuleViolation(
+                    "invalid_query",
+                    "Query parameter 'date' must use the form YYYY-MM-DD.",
+                ) from error
+        else:
+            day = self.server.clock().date()
+        bookings = self.server.storage.list_for_date(day)
+        return {
+            "date": day.isoformat(),
+            "bookings": [booking.to_dict() for booking in bookings],
+            "count": len(bookings),
+        }
+
+    def _create_booking(self) -> None:
+        payload = self._read_json_object()
+        request = self._parse_booking_request(payload)
+        if request.room_id not in self.server.rooms_by_id:
+            raise RuleViolation(
+                "room_not_found",
+                f"Room '{request.room_id}' does not exist.",
+                status=404,
+            )
+
+        now = self.server.clock()
+        validate_booking(request, now)
+        day_bookings = self.server.storage.list_for_date(request.start.date())
+        check_daily_limit(request.email, request.start.date(), day_bookings, now)
+        check_overlap(request.room_id, request.start, request.end, day_bookings)
+
+        booking = self.server.storage.create(request)
+        self._send_json(
+            201,
+            booking.to_dict(),
+            headers={"Location": f"/api/bookings/{booking.id}"},
+        )
+
+    def _delete_booking(self, identifier: str) -> None:
+        try:
+            booking_id = int(identifier)
+        except ValueError as error:
+            raise RuleViolation(
+                "invalid_request", "Booking id must be an integer."
+            ) from error
+        if not self.server.storage.delete(booking_id):
+            raise RuleViolation(
+                "booking_not_found",
+                f"Booking {booking_id} does not exist.",
+                status=404,
+            )
+        self._send_json(204, None)
+
+    # -- request parsing helpers --------------------------------------------
+
+    def _read_json_object(self) -> dict[str, object]:
+        raw_length = self.headers.get("Content-Length")
+        if raw_length is None:
+            raise RuleViolation(
+                "invalid_json", "A JSON request body is required.", status=422
+            )
+        try:
+            length = int(raw_length)
+        except ValueError as error:
+            raise RuleViolation(
+                "invalid_json", "Content-Length must be an integer.", status=422
+            ) from error
+        if length <= 0:
+            raise RuleViolation(
+                "invalid_json", "A JSON request body is required.", status=422
+            )
+        if length > MAX_BODY_BYTES:
+            raise RuleViolation(
+                "payload_too_large", "Request body is too large.", status=422
+            )
+        try:
+            payload = json.loads(self.rfile.read(length))
+        except (ValueError, UnicodeDecodeError) as error:
+            raise RuleViolation(
+                "invalid_json", "Request body must be valid JSON.", status=422
+            ) from error
+        if not isinstance(payload, dict):
+            raise RuleViolation(
+                "invalid_json", "Request body must be a JSON object.", status=422
+            )
+        return payload
+
+    def _parse_booking_request(self, payload: dict[str, object]) -> BookingRequest:
+        missing = [field for field in BOOKING_FIELDS if field not in payload]
+        if missing:
+            raise RuleViolation(
+                "invalid_request",
+                f"Missing required field(s): {', '.join(missing)}.",
+                status=422,
+            )
+        for field in ("room_id", "name", "email"):
+            if not isinstance(payload[field], str):
+                raise RuleViolation(
+                    "invalid_request", f"Field '{field}' must be a string.", status=422
+                )
+        return BookingRequest(
+            room_id=str(payload["room_id"]).strip(),
+            name=str(payload["name"]),
+            email=str(payload["email"]).strip(),
+            start=self._parse_datetime_field(payload, "start"),
+            end=self._parse_datetime_field(payload, "end"),
+        )
+
+    @staticmethod
+    def _parse_datetime_field(payload: dict[str, object], field: str) -> datetime:
+        value = payload[field]
+        if not isinstance(value, str):
+            raise RuleViolation(
+                "invalid_datetime", f"Field '{field}' must be an ISO-8601 string."
+            )
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError as error:
+            raise RuleViolation(
+                "invalid_datetime",
+                f"Field '{field}' must be an ISO-8601 date-time, "
+                "for example 2026-11-05T10:00:00.",
+            ) from error
+
+    @staticmethod
+    def _query_datetime(query: dict[str, list[str]], name: str) -> datetime:
+        values = query.get(name)
+        if not values:
+            raise RuleViolation(
+                "invalid_query", f"Query parameter '{name}' is required."
+            )
+        try:
+            return datetime.fromisoformat(values[0])
+        except ValueError as error:
+            raise RuleViolation(
+                "invalid_datetime",
+                f"Query parameter '{name}' must be an ISO-8601 date-time.",
+            ) from error
+
+    @staticmethod
+    def _query_int(
+        query: dict[str, list[str]], name: str
+    ) -> int | None:
+        values = query.get(name)
+        if not values:
+            return None
+        try:
+            return int(values[0])
+        except ValueError as error:
+            raise RuleViolation(
+                "invalid_query", f"Query parameter '{name}' must be an integer."
+            ) from error
+
+    # -- static files (web/) -------------------------------------------------
+
+    def _serve_static(self, path: str) -> None:
+        relative = "index.html" if path in ("", "/") else path.lstrip("/")
+        web_root = WEB_DIR.resolve()
+        candidate = (WEB_DIR / relative).resolve()
+        if candidate != web_root and web_root not in candidate.parents:
+            self._send_error(404, "not_found", "File not found.")
+            return
+        if not candidate.is_file():
+            self._send_error(404, "not_found", "File not found.")
+            return
+        content_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
+        if content_type.startswith("text/") or content_type in {
+            "application/javascript",
+            "application/json",
+        }:
+            content_type = f"{content_type}; charset=utf-8"
+        body = candidate.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    # -- response helpers ----------------------------------------------------
+
+    def _send_json(
+        self,
+        status: int,
+        payload: dict[str, object] | None,
+        headers: dict[str, str] | None = None,
+    ) -> None:
+        body = b"" if payload is None else json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
+        self.end_headers()
+        if body:
+            self.wfile.write(body)
+
+    def _send_error(self, status: int, code: str, message: str) -> None:
+        self._send_json(status, {"error": {"code": code, "message": message}})
+
+
+def create_server(
+    host: str = "127.0.0.1",
+    port: int = 8000,
+    db_path: str | Path = "data/studyspace.db",
+    rooms_path: str | Path = "data/rooms.json",
+    clock: Callable[[], datetime] | None = None,
+) -> StudySpaceServer:
+    """Build a configured server.
+
+    Passing ``port=0`` asks the operating system for an ephemeral port, which the
+    integration tests use. The clock is injectable so tests can pin "now".
+    """
+    storage = BookingStorage(db_path)
+    rooms = load_rooms(rooms_path)
+    return StudySpaceServer((host, port), storage, rooms, clock or datetime.now)

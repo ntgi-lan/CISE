@@ -1,0 +1,74 @@
+{
+  "rooms": [
+    {
+      "id": "WA-201",
+      "name": "WA-201 Study Room",
+      "building": "WA",
+      "capacity": 4,
+      "features": ["whiteboard"]
+    },
+    {
+      "id": "WA-204",
+      "name": "WA-204 Study Room",
+      "building": "WA",
+      "capacity": 6,
+      "features": ["whiteboard", "monitor"]
+    },
+    {
+      "id": "WA-206",
+      "name": "WA-206 Study Room",
+      "building": "WA",
+      "capacity": 8,
+      "features": ["whiteboard", "monitor"]
+    },
+    {
+      "id": "WA-210",
+      "name": "WA-210 Study Room",
+      "building": "WA",
+      "capacity": 10,
+      "features": ["monitor"]
+    },
+    {
+      "id": "WA-212",
+      "name": "WA-212 Study Room",
+      "building": "WA",
+      "capacity": 2,
+      "features": ["whiteboard"]
+    },
+    {
+      "id": "WZ-101",
+      "name": "WZ-101 Study Room",
+      "building": "WZ",
+      "capacity": 2,
+      "features": ["whiteboard"]
+    },
+    {
+      "id": "WZ-103",
+      "name": "WZ-103 Study Room",
+      "building": "WZ",
+      "capacity": 4,
+      "features": ["monitor"]
+    },
+    {
+      "id": "WZ-105",
+      "name": "WZ-105 Study Room",
+      "building": "WZ",
+      "capacity": 6,
+      "features": ["whiteboard"]
+    },
+    {
+      "id": "WZ-107",
+      "name": "WZ-107 Study Room",
+      "building": "WZ",
+      "capacity": 8,
+      "features": ["whiteboard", "monitor"]
+    },
+    {
+      "id": "WZ-109",
+      "name": "WZ-109 Study Room",
+      "building": "WZ",
+      "capacity": 10,
+      "features": ["monitor"]
+    }
+  ]
+}
