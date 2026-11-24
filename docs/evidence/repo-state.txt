@@ -1,9 +1,13 @@
 StudySpace repository state
-Generated: 2026-11-24 20:04:27 +0800
+Generated: 2026-11-24 20:05:14 +0800
 Repository: https://github.com/ntgi-lan/CISE
 
+Note: this file is committed, so the submission commit is the one that contains it.
+Read it with:  git log -1 --format=%H -- docs/evidence/repo-state.txt
+
 Commit graph:
-* 4986a01 (HEAD -> main, tag: v0.1.0, origin/main, origin/HEAD) test(demo): make the FR-03 demo repeatable and projector-safe
+* bca6697 (HEAD -> main, tag: v0.1.0, origin/main, origin/HEAD) docs(evidence): regenerate the test, smoke-test and repository-state evidence
+* 4986a01 test(demo): make the FR-03 demo repeatable and projector-safe
 * ac38ab1 docs: record the group's roles and the repository provenance for submission
 * bb985a0 docs: make the assessor access section commit-agnostic and point at the tag
 * b657144 docs: point the workflow table at the merged pull request and release commit
@@ -19,13 +23,10 @@ Commit graph:
 * 63c9169 chore: scaffold StudySpace and record individual roles in the planning documents
 
 Working tree:
- M docs/evidence/test-results.txt
+(clean)
 
 Tags:
 v0.1.0          StudySpace v0.1.0 - submission release
-
-HEAD:
-4986a01d8b73d463fea4ced47a38b9db666082ce
 
 Branches:
   feature/fr03-double-booking
