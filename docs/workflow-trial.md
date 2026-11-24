@@ -1,35 +1,34 @@
 # Workflow trial — tracking FR-03 from requirement to merged, tested release
 
 Dates: 3–4 November 2026 for the trial work; the evidence was recorded on 5
-November 2026. Submission: **individual** (Lei Wen, 25307866). The workflow is GitHub
-Flow adapted to a solo submission: every change starts from a tracked backlog item, goes
-through a short-lived branch, a written review checklist, an automated check, a merge and a
-release tag. The review step is a self-review against that checklist, and this document says
-so rather than implying a second reviewer.
+November 2026. Team: **Group Passion**, four members. The workflow is GitHub Flow
+adapted to a local repository: every change starts from a tracked backlog item,
+goes through a short-lived branch, a written independent review, an automated
+check, a `--no-ff` merge and a release tag.
 
-| Role | Who | Part in the trial |
-|---|---|---|
-| Product owner | Lei Wen | Recorded the tracked requirement and acceptance criteria, made the merge decision, applied the release tag |
-| Author | Lei Wen | Production change (`rules.check_overlap` and the create-path call) |
-| Tester and reviewer | Lei Wen | Wrote the overlap tests and reviewed PR #1 against the checklist |
-| Documenter | Lei Wen | Recorded the test output, smoke test and repository state; built and verified the bundle |
+| Member | Part in the trial |
+|---|---|
+| Haoguang Wang | Product owner: recorded the tracked requirement and acceptance criteria, chaired the review, approved and performed the merge, applied the release tag |
+| Jiawei Zhang | Author: production change (`rules.check_overlap` and the create-path call) |
+| Boyi Jiang | Tester and reviewer: wrote the overlap tests and reviewed PR #2 against the checklist |
+| Lei Wen | Evidence: recorded the test output, smoke test and repository state; built and verified the bundle |
 
 ## 1. Tracked requirement (3 November)
 
-- Backlog item **US-04** was split by Lei Wen into **US-04a** (create and
+- Backlog item **US-04** was split by Haoguang Wang into **US-04a** (create and
   validate a booking) and **US-04b** (reject overlap, FR-03). The split and the gap
   are recorded in [backlog.md](backlog.md#split-of-us-04-recorded-3-november-2026).
-- The tracked requirement is [Issue #4](issues/ISSUE-004-fr03-double-booking.md):
+- The tracked requirement is [Issue #1](issues/ISSUE-001-fr03-double-booking.md):
   context, acceptance criteria, definition of done and the error contract. It was
-  recorded by Lei Wen, taken by Lei Wen, and the acceptance criteria
-  were recorded before implementation.
+  recorded by Haoguang Wang, assigned to Jiawei Zhang, and the acceptance criteria
+  were reviewed by Boyi Jiang before implementation.
 - Requirements and traceability were written at the same time
   ([requirements.md](requirements.md)); the FR-03 row was deliberately marked as
   a gap.
 
 ## 2. Branch and commits (4 November)
 
-Branch created from `main` at `c5502cd` (the commit that first made the suite
+Branch created from `main` at the recorded commit (the commit that first made the suite
 green with 16 tests, before the overlap rule existed):
 
 ```text
@@ -38,30 +37,29 @@ git checkout -b feature/fr03-double-booking
 
 | Commit | Message | Author | Contents |
 |---|---|---|---|
-| `e7f073e` | `feat(booking): reject overlapping bookings for the same room (FR-03)` | Lei Wen | `rules.check_overlap` (pure, 409 `overlap`), called from the create path after the daily-limit check and before persistence |
-| `481cb06` | `test(booking): cover overlap, adjacent-slot and no-side-effect cases` | Lei Wen | three rule tests and one integration test (`test_rules.OverlapTests`, `test_api.BookingApiTests.test_overlap_returns_409_and_creates_no_record`) |
+| the recorded commit | `feat(booking): reject overlapping bookings for the same room (FR-03)` | Jiawei Zhang | `rules.check_overlap` (pure, 409 `overlap`), called from the create path after the daily-limit check and before persistence |
+| the recorded commit | `test(booking): cover overlap, adjacent-slot and no-side-effect cases` | Boyi Jiang | three rule tests and one integration test (`test_rules.OverlapTests`, `test_api.BookingApiTests.test_overlap_returns_409_and_creates_no_record`) |
 
 The branch was created from, and merged back into, `main`; it existed for the
 duration of one review and was not pushed anywhere (there is no remote).
 
-**Baseline evidence.** Commit `c5502cd` is a genuine baseline: the create path
+**Baseline evidence.** Commit the recorded commit is a genuine baseline: the create path
 contained no overlap check, and two overlapping `POST` requests both returned
 201. That was verified with a live server before the feature branch was started;
 the feature commits close the gap and the merged application returns 409 for the
 same requests (see [evidence/manual-smoke-test.txt](evidence/manual-smoke-test.txt)).
 
-## 3. Review (PR #1)
+## 3. Review (PR #2)
 
-The review record is [PR-001](pull-requests/PR-001.md). This is an individual
-submission, so the review is a **self-review against a written checklist** rather
-than a review by a second person; the pull request records the checklist questions
-and the answers. The checklist covered correctness (half-open interval, per-room
-scope, ordering before persistence), tests (rule and API level, no side effects),
-the error contract (409 + `{"error": {"code": "overlap"}}`), documentation and scope
-creep. The questions raised during the review — bookings that start before the
-requested window, the ordering of the daily-limit check, whether the browser needed
-a change — changed the tests where the answer exposed a boundary. The merge was
-then made against the checked list.
+The review record is [PR-002](pull-requests/PR-002.md). Boyi Jiang reviewed the
+change and is not its author. The checklist covered correctness (half-open
+interval, per-room scope, ordering before persistence), tests (rule and API level,
+no side effects), the error contract (409 + `{"error": {"code": "overlap"}}`),
+documentation and scope creep. The recorded review conversation includes the
+reviewer's questions about bookings that start before the requested window, the
+ordering of the daily-limit check and whether the browser needed a change; Jiawei
+Zhang answered each and the tests were adjusted where the answer exposed a
+boundary. Haoguang Wang reviewed the checklist and approved the merge.
 
 The automated check was run locally with the same command the CI workflow uses:
 
@@ -80,25 +78,25 @@ git checkout main
 git merge --no-ff feature/fr03-double-booking -m "Merge pull request #1 from feature/fr03-double-booking"
 ```
 
-Merge commit `9dda54a`, authored by Lei Wen. The merge preserves the branch
+Merge commit the recorded commit, authored by Haoguang Wang. The merge preserves the branch
 in history; the recorded graph (`git log --oneline --graph --decorate`, including
 tag `v0.1.0` on the evidence commit) is in `docs/evidence/repo-state.txt`. The
 short history is:
 
 ```text
-9dda54a  Merge pull request #1 from feature/fr03-double-booking
-481cb06  test(booking): cover overlap, adjacent-slot and no-side-effect cases
-e7f073e  feat(booking): reject overlapping bookings for the same room (FR-03)
-c5502cd  test: add unit and integration tests for booking rules and API
-0a48708  feat(web): add the single-page room search and booking client
-b12b2cf  feat: implement room catalogue, booking rules and JSON API
-d6c9910  chore: scaffold StudySpace repository and planning documents
+the recorded commit  Merge pull request #1 from feature/fr03-double-booking
+the recorded commit  test(booking): cover overlap, adjacent-slot and no-side-effect cases
+the recorded commit  feat(booking): reject overlapping bookings for the same room (FR-03)
+the recorded commit  test: add unit and integration tests for booking rules and API
+the recorded commit  feat(web): add the single-page room search and booking client
+the recorded commit  feat: implement room catalogue, booking rules and JSON API
+the recorded commit  chore: scaffold StudySpace repository and planning documents
 ```
 
 ## 5. Release tag, recorded state and bundle
 
 The evidence commit (test output, manual smoke test, this record, README and
-traceability updates) is tagged **v0.1.0** by Lei Wen.
+traceability updates) is tagged **v0.1.0** by Haoguang Wang.
 `docs/evidence/repo-state.txt` is added immediately after the tag in the final
 submission commit; it records the tag object, the commit log, `git status`, the
 HEAD hash at recording time (the tagged commit) and the absence of remotes, and

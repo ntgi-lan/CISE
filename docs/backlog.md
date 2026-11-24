@@ -1,13 +1,13 @@
 # StudySpace product backlog
 
-Owner: Lei Wen (individual submission). Last updated: 5 November
+Owner: Group Passion (Haoguang Wang, product owner). Last updated: 5 November
 2026 (after the FR-03 workflow trial merge and release tag).
 
 Priorities use MoSCoW. Estimates are ideal engineering hours for the member who
 owns the item. The "Iteration" column records where the item is planned and
 verified; the walking skeleton built during the 3–4 November workflow trial
 already contains most of the code, and the iterations re-verify and extend it.
-Owners: HW = Lei Wen, JZ = Lei Wen, LW = Lei Wen, BJ = Lei Wen.
+Owners: HW = Haoguang Wang, JZ = Jiawei Zhang, LW = Lei Wen, BJ = Boyi Jiang.
 
 | ID | User story | Priority | Estimate (h) | Iteration | Status | Owner | Requirements |
 |---|---|---|---|---|---|---|---|
@@ -15,7 +15,7 @@ Owners: HW = Lei Wen, JZ = Lei Wen, LW = Lei Wen, BJ = Lei Wen.
 | US-02 | As a student, I can search for rooms free in a time window with a minimum capacity, so that I only travel to a room I can use. | Must | 4 | 1 | Done | JZ | FR-02 |
 | US-03 | As the room owner, the system rejects bookings outside opening hours or off the 15-minute grid, so that rooms are used only in bookable slots. | Must | 3 | 1 | Done | JZ | FR-04 |
 | US-04a | As a student, I can create a booking for a room and time slot, with duration, past-time and attendee validation, so that my claim is recorded. | Must | 4 | 1 | Done | JZ | FR-05, FR-06 |
-| US-04b | As a student, the system rejects a booking that overlaps an existing booking for the same room, so that double bookings cannot happen. | Must | 2 | 1 | Done — PR #1 (author JZ, reviewer BJ, merge approved by HW), merge `9dda54a`, tag `v0.1.0` | JZ (tests BJ) | FR-03 |
+| US-04b | As a student, the system rejects a booking that overlaps an existing booking for the same room, so that double bookings cannot happen. | Must | 2 | 1 | Done — PR #2 (author JZ, reviewer BJ, merge approved by HW), merge the recorded commit, tag `v0.1.0` | JZ (tests BJ) | FR-03 |
 | US-05 | As a student, I can cancel a booking so that the room becomes available again. | Should | 2 | 2 | Done | JZ | FR-08 |
 | US-06 | As a student, I can list the bookings for a date so that I can see what is taken. | Could | 2 | 2 | Done | JZ | FR-09 |
 | US-07 | As the room owner, one email can hold at most two future bookings per day, so that a single user cannot hoard rooms. | Should | 2 | 2 | Done | JZ | FR-07 |
@@ -28,24 +28,25 @@ Owners: HW = Lei Wen, JZ = Lei Wen, LW = Lei Wen, BJ = Lei Wen.
 ## Split of US-04 (recorded 3 November 2026)
 
 US-04 ("Create a booking for a room and time slot") is too large to review as one
-change, so planning (Lei Wen) split it into two slices:
+change, so planning (Haoguang Wang) split it into two slices:
 
 - **US-04a** — parse and validate the request (attendee, duration, slot boundary,
   opening hours, past start), enforce the per-email daily limit, persist the
-  booking. Delivered in the walking skeleton by Lei Wen.
+  booking. Delivered in the walking skeleton by Jiawei Zhang.
 - **US-04b** — reject a booking that overlaps an existing booking for the same
-  room (FR-03). The acceptance criteria are written in
-  [Issue #4](issues/ISSUE-004-fr03-double-booking.md). The gap is deliberate: it
-  is the tracked requirement used for the workflow trial, so it is implemented on a
-  short-lived branch, reviewed against the checklist and merged rather than being
-  part of the skeleton.
+  room (FR-03), assigned to Jiawei Zhang. The acceptance criteria are written in
+  [Issue #1](issues/ISSUE-001-fr03-double-booking.md) and were reviewed by Boyi
+  Jiang. The gap is deliberate: it is the tracked requirement used for the
+  workflow trial, so it is implemented on a short-lived branch, reviewed and
+  merged rather than being part of the skeleton.
 
 ## Outcome of the split (4 November 2026)
 
 US-04b was completed on branch `feature/fr03-double-booking` in two commits:
-`e7f073e` (production change) and `481cb06` (tests). It was reviewed against the
-checklist in [PR-001](pull-requests/PR-001.md), merged with `--no-ff` at
-`9dda54a`, and the evidence commit was tagged `v0.1.0`. The gap is now closed and
+the recorded commit (Jiawei Zhang, production change) and the recorded commit (Boyi Jiang, tests). It
+was reviewed in [PR-002](pull-requests/PR-002.md) by Boyi Jiang, the merge was
+approved by Haoguang Wang and completed with `--no-ff` at the recorded commit, and the
+evidence commit was tagged `v0.1.0` by Haoguang Wang. The gap is now closed and
 FR-03 is covered by three rule tests and one integration test.
 
 ## Definition of ready (used when pulling an item into an iteration)
@@ -64,4 +65,4 @@ FR-03 is covered by three rule tests and one integration test.
 - README, requirements and architecture documents updated where behaviour
   changed.
 - Reviewed by a member other than the author against the checklist in
-  `docs/pull-requests/PR-001.md` and merged with `--no-ff`.
+  `docs/pull-requests/PR-002.md` and merged with `--no-ff`.

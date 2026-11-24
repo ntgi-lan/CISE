@@ -30,17 +30,17 @@ design response to the integration issue in the project definition.
 
 | Module | Responsibility | Owner | Depends on |
 |---|---|---|---|
-| `studyspace/models.py` | Immutable dataclasses: `Room`, `BookingRequest`, `Booking`; JSON serialisation | Lei Wen | — |
-| `studyspace/rules.py` | Pure rule functions and `RuleViolation` (stable error code + HTTP status) | Lei Wen | `models` |
-| `studyspace/storage.py` | SQLite repository with one short-lived connection per operation; seed loader | Lei Wen | `models` |
-| `studyspace/server.py` | Routing, request parsing, error mapping, static file serving, server factory | Lei Wen | `models`, `rules`, `storage` |
-| `studyspace/__main__.py` | CLI: `python -m studyspace --host --port --db --rooms` | Lei Wen | `server` |
+| `studyspace/models.py` | Immutable dataclasses: `Room`, `BookingRequest`, `Booking`; JSON serialisation | Jiawei Zhang | — |
+| `studyspace/rules.py` | Pure rule functions and `RuleViolation` (stable error code + HTTP status) | Jiawei Zhang | `models` |
+| `studyspace/storage.py` | SQLite repository with one short-lived connection per operation; seed loader | Jiawei Zhang | `models` |
+| `studyspace/server.py` | Routing, request parsing, error mapping, static file serving, server factory | Jiawei Zhang | `models`, `rules`, `storage` |
+| `studyspace/__main__.py` | CLI: `python -m studyspace --host --port --db --rooms` | Jiawei Zhang | `server` |
 | `studyspace/web/` | Single-page front-end: search form, result cards, booking dialog, cancel | Lei Wen | API |
 
 Rules live in one module with no I/O because they are the part of the system most
 likely to change after feedback (engineering issue 1 and NFR-04). Changing a rule
 means editing one pure function and one test, not the transport layer. The
-`tests/` suite is owned by Lei Wen and exercises both levels.
+`tests/` suite is owned by Boyi Jiang and exercises both levels.
 
 ## Create-booking sequence
 

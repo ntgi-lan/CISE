@@ -63,11 +63,11 @@ the author and the reviewer agreed on the expected behaviour.
 Closed 4 November 2026. The change was implemented by Jiawei Zhang on
 `feature/fr03-double-booking`, with tests added by Boyi Jiang:
 
-- `e7f073e` — `feat(booking): reject overlapping bookings for the same room (FR-03)` (Jiawei Zhang)
-- `481cb06` — `test(booking): cover overlap, adjacent-slot and no-side-effect cases` (Boyi Jiang)
+- `the recorded commit` — `feat(booking): reject overlapping bookings for the same room (FR-03)` (Jiawei Zhang)
+- `the recorded commit` — `test(booking): cover overlap, adjacent-slot and no-side-effect cases` (Boyi Jiang)
 
 Reviewed in [PR-001](../pull-requests/PR-001.md) by Boyi Jiang, with the merge
-approved by Haoguang Wang and completed with `--no-ff` at `9dda54a`. The full
+approved by Haoguang Wang and completed with `--no-ff` at `the recorded commit`. The full
 suite was run on `main` after the merge: 20 tests, all passing
 ([test results](../evidence/test-results.txt)). Released as tag `v0.1.0`; see
 [workflow-trial.md](../workflow-trial.md) for the complete evidence trail.

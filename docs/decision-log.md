@@ -2,14 +2,14 @@
 
 Short architecture-decision records (ADR style). Each decision lists the context,
 the decision, the consequences, the alternatives that were rejected and the member
-who owns it (Lei Wen, individual submission).
+who owns it (Group Passion, four-person team).
 
 ## DL-001 — Python 3.12 standard library only
 
-**Owner.** Lei Wen
+**Owner.** Haoguang Wang
 
 **Context.** The assessment environment may be offline and the submission must be
-reproducible by an assessor on a fresh machine. A single developer with a
+reproducible by an assessor on a fresh machine. A four-person student team with a
 limited weekly budget cannot maintain an extra toolchain.
 
 **Decision.** The application and its tests use only the Python 3.12 standard
@@ -26,7 +26,7 @@ system).
 
 ## DL-002 — `ThreadingHTTPServer` with a small hand-written router
 
-**Owner.** Lei Wen
+**Owner.** Jiawei Zhang
 
 **Context.** The API has six endpoints. Requests must not block each other during
 a demo, and the integration tests need a real socket.
@@ -43,7 +43,7 @@ this size); a third-party framework (breaks DL-001).
 
 ## DL-003 — SQLite via `sqlite3`, one connection per operation
 
-**Owner.** Lei Wen
+**Owner.** Jiawei Zhang
 
 **Context.** Bookings must persist across restarts, and the environment cannot run
 a database server.
@@ -62,7 +62,7 @@ server (out of scope, no budget).
 
 ## DL-004 — Booking rules isolated as pure functions
 
-**Owner.** Lei Wen
+**Owner.** Jiawei Zhang
 
 **Context.** Requirements are expected to change after lecturer feedback (the
 rule set is the most volatile part of the system), and the team cannot afford
@@ -101,7 +101,7 @@ fetch); free-text messages only (not assertable, drifts between endpoints).
 
 ## DL-006 — Git bundle delivery, GitHub Flow for the trial change
 
-**Owner.** Lei Wen
+**Owner.** Haoguang Wang
 
 **Context.** The team has no GitHub account and the assignment requires evidence
 of a collaborative workflow. There is no remote to host pull requests.
@@ -112,8 +112,8 @@ review checklist and a recorded review conversation, a `--no-ff` merge and a
 release tag (`v0.1.0`). Deliver the repository as `studyspace.bundle` (plus a zip
 of the working tree) so an assessor can clone the full history offline. The PR
 record and review checklist stand in for a hosted pull request: the review was
-performed by Lei Wen, a member other than the author, and the merge was
-approved by Lei Wen.
+performed by Boyi Jiang, a member other than the author, and the merge was
+approved by Haoguang Wang.
 
 **Consequences.** The full history is verifiable offline. The workflow discipline
 (issue, branch, small commits, independent review, merge commit, tag) is

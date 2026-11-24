@@ -1,7 +1,7 @@
 # Test plan — StudySpace
 
 Last updated: 5 November 2026 (FR-03 tests merged; 20 tests total). Test suite
-owned by Lei Wen (tester and reviewer); evidence recorded by Lei Wen.
+owned by Boyi Jiang (tester and reviewer); evidence recorded by Lei Wen.
 
 ## Objective
 
@@ -25,8 +25,8 @@ python -m unittest discover -s tests -v
 
 | Level | File | Scope | Fixture | Owner |
 |---|---|---|---|---|
-| Unit | `tests/test_rules.py` | Pure booking rules: opening hours, slot boundaries, duration, past bookings, daily limit, overlap | None; fixed datetimes and an injected `now` | Lei Wen |
-| Integration | `tests/test_api.py` | Real HTTP server on an ephemeral port, real SQLite temporary database, JSON contract, status codes | `tests/helpers.py` starts a `ThreadingHTTPServer` per test with a temporary database and a pinned clock | Lei Wen |
+| Unit | `tests/test_rules.py` | Pure booking rules: opening hours, slot boundaries, duration, past bookings, daily limit, overlap | None; fixed datetimes and an injected `now` | Boyi Jiang |
+| Integration | `tests/test_api.py` | Real HTTP server on an ephemeral port, real SQLite temporary database, JSON contract, status codes | `tests/helpers.py` starts a `ThreadingHTTPServer` per test with a temporary database and a pinned clock | Boyi Jiang |
 | Manual smoke | see below | Start the app and exercise health, create, overlap rejection and cancel through the API | Local server on a chosen port | Lei Wen |
 
 The integration fixture injects a fixed clock (Wednesday 4 November 2026, 08:00)
@@ -96,13 +96,13 @@ Real smoke-test output is stored in `docs/evidence/manual-smoke-test.txt`.
 ## NFR-02 performance check (manual)
 
 With a warm local server, time a small loop of health, room-search and booking
-requests (owner: Lei Wen). Record the p95 in the report's evaluation section.
+requests (owner: Boyi Jiang). Record the p95 in the report's evaluation section.
 This is a manual check, not part of the automated suite.
 
 ## What is not tested automatically
 
 - Browser rendering and usability (NFR-03) — manual usability check in
-  Iteration 2, owned by Lei Wen with Lei Wen observing.
+  Iteration 2, owned by Boyi Jiang with Lei Wen observing.
 - Cross-browser behaviour; the front-end is vanilla JavaScript and the API is
   covered independently.
 - Performance under load — out of scope for a single-campus demo.

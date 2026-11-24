@@ -1,63 +1,47 @@
-# Repository state evidence - StudySpace v0.1.0
+StudySpace repository state
+Generated: 2026-11-24 18:40:15 +0800
+Repository: https://github.com/ntgi-lan/CISE
 
-Recorded: 2026-11-05 21:15:00 +08:00
-Python 3.12.14
-
-This file records the real output of the Git state commands, run from the
-repository root immediately before this file was added in the final submission
-commit. The recorded HEAD is the tagged release commit `v0.1.0`; the submission
-commit is the commit that adds this file (the tip of `main`, one commit after the
-recorded HEAD). The recorded `git status` was captured while the working tree was
-clean.
-
-## git log --oneline --graph --decorate --all
-
-* 558740a (HEAD -> main, tag: v0.1.0) docs(evidence): record v0.1.0 test results and workflow evidence
-*   9dda54a Merge pull request #1 from feature/fr03-double-booking
+Commit graph:
+* bb985a0 (HEAD -> main, tag: v0.1.0, origin/main, origin/HEAD) docs: make the assessor access section commit-agnostic and point at the tag
+* b657144 docs: point the workflow table at the merged pull request and release commit
+*   735861b Merge pull request #2 from feature/fr03-double-booking
 |\  
-| * 481cb06 (feature/fr03-double-booking) test(booking): cover overlap, adjacent-slot and no-side-effect cases
-| * e7f073e feat(booking): reject overlapping bookings for the same room (FR-03)
+| * f53198d (origin/feature/fr03-double-booking, feature/fr03-double-booking) test(demo): add a live demo script for the FR-03 acceptance criteria
+* | 7075472 docs: record the release commit in the assessor access section
+* | da5d6e6 docs: point the README at the public repository and record the assessor access
+* | eca1564 Merge branch 'feature/fr03-double-booking' into main
+|\| 
+| * 757473a feat(booking): document the half-open boundary on the FR-03 overlap check
 |/  
-* c5502cd test: add unit and integration tests for booking rules and API
-* 0a48708 feat(web): add the single-page room search and booking client
-* b12b2cf feat: implement room catalogue, booking rules and JSON API
-* d6c9910 chore: scaffold StudySpace repository and planning documents
+* 63c9169 chore: scaffold StudySpace and record individual roles in the planning documents
 
-## git status
+Working tree:
+ M README.md
+ M docs/architecture.md
+ M docs/backlog.md
+ M docs/contribution-log.md
+ M docs/decision-log.md
+ M docs/evidence-index.md
+ M docs/evidence/repo-state.txt
+ M docs/evidence/test-results.txt
+ D docs/issues/ISSUE-004-fr03-double-booking.md
+ D docs/pull-requests/PR-001.md
+ M docs/risk-register.md
+ M docs/test-plan.md
+ M docs/workflow-trial.md
+?? docs/issues/ISSUE-001-fr03-double-booking.md
+?? docs/pull-requests/PR-002.md
 
-On branch main
-nothing to commit, working tree clean
+Tags:
+v0.1.0          StudySpace v0.1.0 - submission release
 
-## git tag --list
+HEAD:
+bb985a0dc15e5848b224676bd06124412af4fbaf
 
-v0.1.0
-
-## git show-ref --tags
-
-e8edde1fd2e6076468090b78239f650a0264c78a refs/tags/v0.1.0
-
-## Release tag
-
-tag object:   e8edde1fd2e6076468090b78239f650a0264c78a
-tag target:   558740aba02ef756139733be242d910cd432573a
-tagger:       Haoguang Wang <zcz6356@autuni.ac.nz>
-tag message:  StudySpace v0.1.0 - released evidence commit
-
-## PR #1 merge commit
-
-merge commit: 9dda54a25acfea63ab351fbe31f328b016dece98
-parents:      c5502cd3df71b66dd7a824d73bb0e2dbef4ec087 481cb066672d6222b3eb35aa1b099496f4d6e7b4
-message:      Merge pull request #1 from feature/fr03-double-booking
-
-## Current branch
-
-main
-
-## HEAD
-
-full:  558740aba02ef756139733be242d910cd432573a
-short: 558740a
-
-## Remotes
-
-(none configured)
+Branches:
+  feature/fr03-double-booking
+* main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/feature/fr03-double-booking
+  remotes/origin/main
