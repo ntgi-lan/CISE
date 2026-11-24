@@ -63,10 +63,10 @@ The workflow was trialled on one small change, followed from tracked requirement
 
 | Step | Where |
 |---|---|
-| Requirement tracked | [Issue #1](https://github.com/ntgi-lan/CISE/issues/1) — FR-03 with acceptance criteria and definition of done |
-| Implementation | branch `feature/fr03-double-booking`, commit "feat(booking): reject overlapping bookings for the same room (FR-03)" |
-| Tests | commit "test(booking): cover overlap, adjacent-slot and no-side-effect cases" |
-| Review | [Pull request #1](https://github.com/ntgi-lan/CISE/pull/1) — review checklist and reviewer comments |
+| Requirement tracked | [Issue #1](https://github.com/ntgi-lan/CISE/issues/1) - FR-03 with acceptance criteria and definition of done |
+| Implementation | branch `feature/fr03-double-booking`, commit "feat(booking): document the half-open boundary on the FR-03 overlap check" |
+| Tests | commit "test(demo): add a live demo script for the FR-03 acceptance criteria" |
+| Review | [Pull request #2](https://github.com/ntgi-lan/CISE/pull/2) - self-review checklist and merge record |
 | Merge and release | merge commit on `main`, annotated tag `v0.1.0` |
 
 Evidence files: [`docs/evidence/`](docs/evidence/) (test output, repository state) and
@@ -76,8 +76,8 @@ Evidence files: [`docs/evidence/`](docs/evidence/) (test output, repository stat
 
 The repository is public: <https://github.com/ntgi-lan/CISE>.
 
-- Submission release: tag `v0.1.0` (merge commit `da5d6e6`)
-- Submission commit: `da5d6e6`
+- Submission release: tag `v0.1.0` (merge commit `735861b`)
+- Submission commit: `735861b`
 - Read-only clone: `git clone https://github.com/ntgi-lan/CISE.git`
 
 ## Reused code and resources
