@@ -1,6 +1,6 @@
 # Requirements — StudySpace
 
-Last updated: 5 November 2026 (after merging PR #1 and recording the release
+Last updated: 5 November 2026 (after merging PR #2 and recording the release
 evidence). Status shows the current implemented state of the repository.
 Traceability links each requirement to a backlog item, an implementation file and
 a named test.
@@ -11,7 +11,7 @@ a named test.
 |---|---|---|---|---|
 | FR-01 | Show the room catalogue (id, building, capacity, features) | Must | `GET /api/rooms` returns the 10 seeded rooms with all fields; each room has a stable id | Implemented |
 | FR-02 | Search rooms free for a date and time window, filtered by minimum capacity | Must | Given a valid window and capacity, only rooms with no overlapping booking and sufficient capacity are returned; invalid input returns 400 | Implemented |
-| FR-03 | Reject overlapping bookings for the same room | Must | Given an existing booking 10:00–11:00, `POST` 10:30–11:30 for the same room returns 409 and creates no record; adjacent 11:00–12:00 returns 201 | Implemented (Issue #4, PR #1) |
+| FR-03 | Reject overlapping bookings for the same room | Must | Given an existing booking 10:00–11:00, `POST` 10:30–11:30 for the same room returns 409 and creates no record; adjacent 11:00–12:00 returns 201 | Implemented (Issue #1, PR #2) |
 | FR-04 | Enforce opening hours and 15-minute slot boundaries | Must | A booking outside opening hours or with a non-15-minute boundary returns 400 with an error code | Implemented |
 | FR-05 | Enforce 30–120 minute duration | Must | 15-minute and 150-minute requests return 400; 30 and 120 minute requests succeed | Implemented |
 | FR-06 | Reject bookings in the past | Must | A start time earlier than the current local time returns 400 | Implemented |

@@ -1,7 +1,7 @@
-# ISSUE-004 — FR-03: reject overlapping bookings for the same room
+# ISSUE-001 — FR-03: reject overlapping bookings for the same room
 
 - **Type:** tracked requirement (clear gap in the walking skeleton)
-- **Status:** Closed (merged via PR #1, committed to `main`, released in `v0.1.0`)
+- **Status:** Closed (merged via PR #2, committed to `main`, released in `v0.1.0`)
 - **Priority:** Must (MoSCoW)
 - **Requirement:** FR-03
 - **Backlog item:** US-04b (split from US-04 on 3 November 2026)
@@ -66,7 +66,7 @@ Closed 4 November 2026. The change was implemented by Jiawei Zhang on
 - `the recorded commit` — `feat(booking): reject overlapping bookings for the same room (FR-03)` (Jiawei Zhang)
 - `the recorded commit` — `test(booking): cover overlap, adjacent-slot and no-side-effect cases` (Boyi Jiang)
 
-Reviewed in [PR-001](../pull-requests/PR-001.md) by Boyi Jiang, with the merge
+Reviewed in [PR-002](../pull-requests/PR-002.md) by Boyi Jiang, with the merge
 approved by Haoguang Wang and completed with `--no-ff` at `the recorded commit`. The full
 suite was run on `main` after the merge: 20 tests, all passing
 ([test results](../evidence/test-results.txt)). Released as tag `v0.1.0`; see
