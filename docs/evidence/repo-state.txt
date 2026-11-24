@@ -1,9 +1,11 @@
 StudySpace repository state
-Generated: 2026-11-24 18:40:15 +0800
+Generated: 2026-11-24 20:04:27 +0800
 Repository: https://github.com/ntgi-lan/CISE
 
 Commit graph:
-* bb985a0 (HEAD -> main, tag: v0.1.0, origin/main, origin/HEAD) docs: make the assessor access section commit-agnostic and point at the tag
+* 4986a01 (HEAD -> main, tag: v0.1.0, origin/main, origin/HEAD) test(demo): make the FR-03 demo repeatable and projector-safe
+* ac38ab1 docs: record the group's roles and the repository provenance for submission
+* bb985a0 docs: make the assessor access section commit-agnostic and point at the tag
 * b657144 docs: point the workflow table at the merged pull request and release commit
 *   735861b Merge pull request #2 from feature/fr03-double-booking
 |\  
@@ -17,27 +19,13 @@ Commit graph:
 * 63c9169 chore: scaffold StudySpace and record individual roles in the planning documents
 
 Working tree:
- M README.md
- M docs/architecture.md
- M docs/backlog.md
- M docs/contribution-log.md
- M docs/decision-log.md
- M docs/evidence-index.md
- M docs/evidence/repo-state.txt
  M docs/evidence/test-results.txt
- D docs/issues/ISSUE-004-fr03-double-booking.md
- D docs/pull-requests/PR-001.md
- M docs/risk-register.md
- M docs/test-plan.md
- M docs/workflow-trial.md
-?? docs/issues/ISSUE-001-fr03-double-booking.md
-?? docs/pull-requests/PR-002.md
 
 Tags:
 v0.1.0          StudySpace v0.1.0 - submission release
 
 HEAD:
-bb985a0dc15e5848b224676bd06124412af4fbaf
+4986a01d8b73d463fea4ced47a38b9db666082ce
 
 Branches:
   feature/fr03-double-booking

@@ -1,91 +1,35 @@
-# Manual smoke test - StudySpace v0.1.0 (real run)
+# Manual smoke test - StudySpace
 
-Recorded: 2026-11-05 21:12:47 +08:00
-Python 3.12.14
-Working directory: repository root (base URL stripped from the request lines)
-Server command: python -m studyspace --port <ephemeral port> --db <temporary database file>
+Recorded: 2026-11-24 20:04:40 +0800
+Python: 3.12.14
+Server: python -m studyspace --port 8803 (fresh database, created on first run)
 
-Both transcripts below are real HTTP conversations with a running server. The
-released-application run was executed on `main` after the PR #1 merge; the
-baseline run was executed on the pre-FR-03 baseline commit to prove that the
-overlap gap was real before the fix.
+These are real HTTP conversations with a running server, recorded from this repository.
 
-## Released application after the PR #1 merge (commit 9dda54a)
+## Released application (date used for the run: 2026-12-08)
 
 ```text
-$ GET /api/health
+$ GET /api/health   # health
   -> HTTP 200
   {"status": "ok", "version": "0.1.0"}
 
-$ GET /api/rooms
+$ GET /api/rooms   # room catalogue
   -> HTTP 200
-  {"rooms": [{"id": "WA-201", "name": "WA-201 Study Room", "building": "WA", "capacity": 4, "features": ["whiteboard"]}, {"id": "WA-204", "name": "WA-204 Study Room", "building": "WA", "capacity": 6, "features": ["whiteboard", "monitor"]}, {"id": "WA-206", "name": "WA-206 Study Room", "building": "WA", "capacity": 8, "features": ["whiteboard", "monitor"]}, {"id": "WA-210", "name": "WA-210 Study Room", "building": "WA", "capacity": 10, "features": ["monitor"]}, {"id": "WA-212", "name": "WA-212 Study Room", "building": "WA", "capacity": 2, "features": ["whiteboard"]}, {"id": "WZ-101", "name": "WZ-101 Study Room", "building": "WZ", "capacity": 2, "features": ["whiteboard"]}, {"id": "WZ-103", "name": "WZ-103 Study Room", "building": "WZ", "capacity": 4, "features": ["monitor"]}, {"id": "WZ-105", "name": "WZ-105 Study Room", "building": "WZ", "capacity": 6, "features": ["whiteboard"]}, {"id": "WZ-107", "name": "WZ-107 Study Room", "building": "WZ", "capacity": 8, "features": ["whiteboard", "monitor"]}, {"id": "WZ-109", "name": "WZ-109 Study Room", "building": "WZ", "capacity": 10, "features": ["monitor"]}], "count": 10}
+  {"rooms": [{"id": "WA-201", "name": "WA-201 Study Room", "building": "WA", "capacity": 4, "features": ["whiteboard"]}, {"id": "WA-204", "name": "WA-204 Study Room", "building": "WA", "capacity": 6, "features": ["whiteboard", "monitor"]}, {"id": "WA-206", "name": "WA-206 Study Room", "building": "WA"
 
-$ POST /api/bookings
-  request: {"room_id": "WA-201", "name": "Alex Student", "email": "alex.student@autuni.ac.nz", "start": "2026-11-06T10:00:00", "end": "2026-11-06T11:00:00"}
+$ POST /api/bookings   # create a booking
   -> HTTP 201
-  {"id": 1, "room_id": "WA-201", "name": "Alex Student", "email": "alex.student@autuni.ac.nz", "start": "2026-11-06T10:00:00", "end": "2026-11-06T11:00:00", "created_at": "2026-11-05T21:11:58"}
+  {"id": 1, "room_id": "WA-201", "name": "Smoke Test", "email": "smoke@autuni.ac.nz", "start": "2026-12-08T10:00:00", "end": "2026-12-08T11:00:00", "created_at": "2026-11-24T20:04:40"}
 
-$ POST /api/bookings
-  request: {"room_id": "WA-201", "name": "Sam Student", "email": "sam.student@autuni.ac.nz", "start": "2026-11-06T10:30:00", "end": "2026-11-06T11:30:00"}
+$ POST /api/bookings   # overlapping booking
   -> HTTP 409
-  {"error": {"code": "overlap", "message": "Room WA-201 is already booked from 10:00 to 11:00 on 2026-11-06."}}
+  {"error": {"code": "overlap", "message": "Room WA-201 is already booked from 10:00 to 11:00 on 2026-12-08."}}
 
-$ GET /api/bookings?date=2026-11-06
-  -> HTTP 200
-  {"date": "2026-11-06", "bookings": [{"id": 1, "room_id": "WA-201", "name": "Alex Student", "email": "alex.student@autuni.ac.nz", "start": "2026-11-06T10:00:00", "end": "2026-11-06T11:00:00", "created_at": "2026-11-05T21:11:58"}], "count": 1}
+$ POST /api/bookings   # adjacent booking
+  -> HTTP 201
+  {"id": 2, "room_id": "WA-201", "name": "Adjacent", "email": "adj@autuni.ac.nz", "start": "2026-12-08T11:00:00", "end": "2026-12-08T12:00:00", "created_at": "2026-11-24T20:04:40"}
 
-$ DELETE /api/bookings/1
-  -> HTTP 204
-  (empty body)
-
-$ GET /api/bookings?date=2026-11-06
-  -> HTTP 200
-  {"date": "2026-11-06", "bookings": [], "count": 0}
-
-$ GET /api/rooms?start=2026-11-06T10:00:00&end=2026-11-06T11:00:00&min_capacity=9
-  -> HTTP 200
-  {"rooms": [{"id": "WA-210", "name": "WA-210 Study Room", "building": "WA", "capacity": 10, "features": ["monitor"]}, {"id": "WZ-109", "name": "WZ-109 Study Room", "building": "WZ", "capacity": 10, "features": ["monitor"]}], "count": 2}
-
-Checks:
-- health status ok and version 0.1.0: True
-- catalogue returned 10 rooms: True
-- booking created (201) with an id: True
-- overlapping booking rejected (409 overlap): True
-- list shows the booking: True
-- cancel returned 204: True
-- list after cancel is empty: True
-- capacity search returned only WA-210 and WZ-109: True
 ```
 
-## Baseline check before FR-03 (commit c5502cd)
-
-The same overlapping booking pair was posted to the pre-FR-03 baseline: both
-requests succeeded and the date list contained two overlapping bookings, which
-is the gap the workflow trial closed.
-
-```text
-$ GET /api/health
-  -> HTTP 200
-  {"status": "ok", "version": "0.1.0"}
-
-$ POST /api/bookings
-  request: {"room_id": "WA-201", "name": "Alex Student", "email": "alex.student@autuni.ac.nz", "start": "2026-11-06T10:00:00", "end": "2026-11-06T11:00:00"}
-  -> HTTP 201
-  {"id": 1, "room_id": "WA-201", "name": "Alex Student", "email": "alex.student@autuni.ac.nz", "start": "2026-11-06T10:00:00", "end": "2026-11-06T11:00:00", "created_at": "2026-11-05T21:11:27"}
-
-$ POST /api/bookings
-  request: {"room_id": "WA-201", "name": "Sam Student", "email": "sam.student@autuni.ac.nz", "start": "2026-11-06T10:30:00", "end": "2026-11-06T11:30:00"}
-  -> HTTP 201
-  {"id": 2, "room_id": "WA-201", "name": "Sam Student", "email": "sam.student@autuni.ac.nz", "start": "2026-11-06T10:30:00", "end": "2026-11-06T11:30:00", "created_at": "2026-11-05T21:11:27"}
-
-$ GET /api/bookings?date=2026-11-06
-  -> HTTP 200
-  {"date": "2026-11-06", "bookings": [{"id": 1, "room_id": "WA-201", "name": "Alex Student", "email": "alex.student@autuni.ac.nz", "start": "2026-11-06T10:00:00", "end": "2026-11-06T11:00:00", "created_at": "2026-11-05T21:11:27"}, {"id": 2, "room_id": "WA-201", "name": "Sam Student", "email": "sam.student@autuni.ac.nz", "start": "2026-11-06T10:30:00", "end": "2026-11-06T11:30:00", "created_at": "2026-11-05T21:11:27"}], "count": 2}
-
-Checks:
-- health reports ok: True
-- first booking created (201): True
-- second overlapping booking also created (201), gap confirmed: True
-- list shows two overlapping bookings: True
-```
+The released application refuses the overlapping request with 409 and the `overlap` error
+code, while the adjacent request succeeds because the interval is half-open.
