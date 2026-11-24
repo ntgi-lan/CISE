@@ -76,8 +76,8 @@ Evidence files: [`docs/evidence/`](docs/evidence/) (test output, repository stat
 
 The repository is public: <https://github.com/ntgi-lan/CISE>.
 
-- Submission release: tag `v0.1.0` (merge commit `eca1564`)
-- Submission commit: `eca1564`
+- Submission release: tag `v0.1.0` (merge commit `da5d6e6`)
+- Submission commit: `da5d6e6`
 - Read-only clone: `git clone https://github.com/ntgi-lan/CISE.git`
 
 ## Reused code and resources
