@@ -118,11 +118,27 @@ def main():
     s, b = book(ROOM, "13:00", "13:15", "Fifth Student")
     results.append(check(5, "reject a too-short booking with 400", s, b, 400))
 
+    print("\n[6] Building filter: WA returns 5, WZ returns 5, an unknown building returns 0")
+    counts = {}
+    for key in ("WA", "WZ", "ZZ"):
+        s, b = call(
+            "GET",
+            f"/api/rooms?start={DAY}T15:00:00&end={DAY}T16:00:00"
+            f"&min_capacity=1&building={key}",
+        )
+        counts[key] = b.get("count") if isinstance(b, dict) else None
+    passed = counts == {"WA": 5, "WZ": 5, "ZZ": 0}
+    print(
+        f"    expected WA=5, WZ=5, ZZ=0; got WA={counts['WA']}, "
+        f"WZ={counts['WZ']}, ZZ={counts['ZZ']}   {'PASS' if passed else 'FAIL'}"
+    )
+    results.append(passed)
+
     print("\n" + "-" * 78)
     print(f"  {sum(results)}/{len(results)} checks passed.")
     if all(results):
         print("  The first booking holds the room; the overlap is refused; the adjacent")
-        print("  slot and the other room are still bookable.")
+        print("  slot and the other room are still bookable; the building filter works.")
     else:
         print("  Some checks failed - read the status codes above before presenting.")
     return 0 if all(results) else 1
