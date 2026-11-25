@@ -119,11 +119,17 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
     # -- room catalogue and search (FR-01, FR-02) ----------------------------
 
     def _rooms_payload(self, query: dict[str, list[str]]) -> dict[str, object]:
+        building_values = query.get("building")
+        building = building_values[0].strip().upper() if building_values else None
+        if not building:
+            building = None
         has_search = any(
             key in query for key in ("start", "end", "min_capacity")
         )
         if not has_search:
-            rooms = self.server.rooms
+            rooms = list(self.server.rooms)
+            if building:
+                rooms = [room for room in rooms if room.building.upper() == building]
             return {"rooms": [room.to_dict() for room in rooms], "count": len(rooms)}
 
         start = self._query_datetime(query, "start")
@@ -134,6 +140,8 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
         free_rooms = rooms_free_for_window(
             self.server.rooms, bookings, start, end, min_capacity
         )
+        if building:
+            free_rooms = [room for room in free_rooms if room.building.upper() == building]
         return {
             "rooms": [room.to_dict() for room in free_rooms],
             "count": len(free_rooms),

@@ -1,0 +1,20 @@
+# Latency measurement - StudySpace
+
+Recorded: 2026-11-26 00:14:26 +0800
+Server: http://127.0.0.1:8870
+Python: 3.12.14 on Windows 11
+Processor: Intel64 Family 6 Model 151 Stepping 2, GenuineIntel
+Inputs: 100 sequential requests per endpoint, no concurrency
+Booking window used: 2026-12-10, 08:00-16:00, room WZ-109
+Procedure: python measure_latency.py (fresh database; server started with python -m studyspace --port 8000)
+
+| Endpoint | n | p50 (ms) | p95 (ms) | max (ms) |
+|---|---|---|---|---|
+| GET /api/rooms | 100 | 1.11 | 22.44 | 22.96 |
+| GET /api/rooms?start&end&min_capacity | 100 | 1.78 | 23.8 | 26.57 |
+| POST /api/bookings | 100 | 10.32 | 30.05 | 33.49 |
+
+Target from the project plan: p95 under 300 ms.
+Result: target met on every endpoint
+
+Limitations: sequential requests from one client on one machine; this measures the single-user latency, not throughput under concurrency.

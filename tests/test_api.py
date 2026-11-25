@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import unittest
 
-from helpers import ServerTestCase, booking_payload
+from helpers import BOOKING_DAY, ServerTestCase, booking_payload
 from studyspace import __version__
 
 SEEDED_ROOM_IDS = {
@@ -50,6 +50,32 @@ class HealthAndCatalogueTests(ServerTestCase):
             self.assertGreaterEqual(room["capacity"], 2)
             self.assertLessEqual(room["capacity"], 10)
             self.assertTrue(room["features"])
+
+
+class BuildingFilterTests(ServerTestCase):
+    """Iteration 2: free-room search can be limited to one building."""
+
+    def test_search_filters_to_one_building(self) -> None:
+        status, body = self.api.request(
+            "GET",
+            f"/api/rooms?start={BOOKING_DAY}T10:00:00&end={BOOKING_DAY}T11:00:00"
+            "&min_capacity=1&building=WA",
+        )
+        self.assertEqual(status, 200)
+        rooms = body["rooms"]
+        self.assertEqual(len(rooms), 5)
+        self.assertEqual({room["building"] for room in rooms}, {"WA"})
+        self.assertEqual(body["count"], 5)
+
+    def test_unknown_building_returns_no_rooms(self) -> None:
+        status, body = self.api.request(
+            "GET",
+            f"/api/rooms?start={BOOKING_DAY}T10:00:00&end={BOOKING_DAY}T11:00:00"
+            "&min_capacity=1&building=ZZ",
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(body["count"], 0)
+        self.assertEqual(body["rooms"], [])
 
 
 class BookingApiTests(ServerTestCase):

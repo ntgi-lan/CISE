@@ -22,6 +22,7 @@ const elements = {
   start: document.getElementById("search-start"),
   end: document.getElementById("search-end"),
   capacity: document.getElementById("search-capacity"),
+  building: document.getElementById("search-building"),
   searchStatus: document.getElementById("search-status"),
   results: document.getElementById("room-results"),
   bookingsDate: document.getElementById("bookings-date"),
@@ -130,6 +131,9 @@ async function search() {
       end: toIso(date, end),
       min_capacity: String(capacity),
     });
+    if (elements.building.value) {
+      query.set("building", elements.building.value);
+    }
     const payload = await requestJson(`/api/rooms?${query.toString()}`);
     state.rooms = payload.rooms;
     setStatus(
