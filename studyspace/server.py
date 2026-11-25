@@ -174,11 +174,7 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
         validate_booking(request, now)
         day_bookings = self.server.storage.list_for_date(request.start.date())
         check_daily_limit(request.email, request.start.date(), day_bookings, now)
-# FR-03: the same room cannot be booked over an existing booking. The interval is
-        # half-open, so a booking that ends at 11:00 and one that starts at 11:00 do not
-        # overlap. This runs after the daily-limit check and before persistence, so a
-        # refused request creates no record.
-        check_overlap(request.room_id, request.start, request.end, day_bookings)
+        # Baseline for the demo: the FR-03 overlap check is deliberately absent here.
 
         booking = self.server.storage.create(request)
         self._send_json(
