@@ -17,3 +17,6 @@ Thumbs.db
 
 data/rooms_added.json
 
+
+data/outbox/
+
