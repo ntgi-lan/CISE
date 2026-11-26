@@ -7,6 +7,18 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">StudySpace</span>
+      <span class="version">v0.2.0</span>
+    </div>
+    <div class="identity">
+      <span id="identity-label" class="identity-label">Not signed in</span>
+      <button type="button" id="identity-button" class="ghost-button">Sign in</button>
+      <button type="button" id="identity-signout" class="ghost-button" hidden>Sign out</button>
+    </div>
+  </header>
+
   <header class="site-header">
     <h1>StudySpace</h1>
     <p>Find a free room on the AUT city campus, then claim it for a time slot.</p>
@@ -41,12 +53,52 @@
       <div id="room-results" class="card-grid"></div>
     </section>
 
+    <section aria-labelledby="my-heading" id="my-section" hidden>
+      <h2 id="my-heading">My bookings · <span id="my-date">the selected date</span></h2>
+      <p id="my-status" class="status" role="status"></p>
+      <div id="my-list"></div>
+    </section>
+
     <section aria-labelledby="bookings-heading">
       <h2 id="bookings-heading">Bookings for <span id="bookings-date">the selected date</span></h2>
       <p id="bookings-status" class="status" role="status"></p>
       <div id="booking-list"></div>
     </section>
+
+    <section aria-labelledby="staff-heading" class="staff-section">
+      <details id="staff-panel" open>
+        <summary id="staff-heading">Staff view · occupancy and all bookings</summary>
+        <div id="staff-stats" class="stats"></div>
+        <div id="staff-table" class="table-wrap"></div>
+      </details>
+    </section>
   </main>
+
+  <dialog id="identity-dialog" aria-labelledby="identity-title">
+    <form id="identity-form" method="dialog">
+      <h2 id="identity-title">Sign in</h2>
+      <p class="muted">Your name and email are kept in this browser only. No password is stored.</p>
+      <label>Name
+        <input type="text" id="identity-name" autocomplete="name" required>
+      </label>
+      <label>Email
+        <input type="email" id="identity-email" autocomplete="email" required>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" id="identity-cancel">Cancel</button>
+        <button type="submit" id="identity-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="room-dialog" aria-labelledby="room-title">
+    <h2 id="room-title">Room details</h2>
+    <dl id="room-details" class="detail-list"></dl>
+    <div class="dialog-actions">
+      <button type="button" id="room-close">Close</button>
+      <button type="button" id="room-book">Book this room</button>
+    </div>
+  </dialog>
 
   <dialog id="booking-dialog" aria-labelledby="dialog-title">
     <form id="booking-form" method="dialog">
@@ -67,7 +119,7 @@
   </dialog>
 
   <footer class="site-footer">
-    <p>StudySpace v0.1.0 — a Python standard-library demonstration application.</p>
+    <p>StudySpace v0.2.0 — a Python standard-library demonstration application.</p>
   </footer>
 
   <script src="app.js"></script>

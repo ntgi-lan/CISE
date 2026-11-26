@@ -236,3 +236,148 @@ dialog input {
     align-items: flex-start;
   }
 }
+
+/* ---------------------------------------------------------------- top bar */
+.topbar {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0.9rem 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.brand-mark {
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+
+.version {
+  font-size: 0.75rem;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.identity-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.ghost-button {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--line);
+}
+
+.ghost-button:hover {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- cards */
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.card-actions button {
+  margin-top: 0;
+}
+
+/* ---------------------------------------------------------------- staff view */
+.staff-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+
+.stat-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.stat-card strong {
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.stat-card span {
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.stat-card small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.data-table th {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.detail-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1rem;
+  margin: 1rem 0;
+}
+
+.detail-list dt {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.detail-list dd {
+  margin: 0;
+}
