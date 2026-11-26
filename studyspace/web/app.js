@@ -188,9 +188,16 @@ function renderRooms(rooms) {
 
     const features = document.createElement("p");
     features.className = "muted";
-    features.textContent = room.features.length
-      ? room.features.join(", ")
-      : "No listed features";
+    if (room.features.length) {
+      for (const feature of room.features) {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = feature;
+        features.append(chip);
+      }
+    } else {
+      features.textContent = "No listed features";
+    }
 
     const actions = document.createElement("div");
     actions.className = "card-actions";
