@@ -24,19 +24,28 @@ def _now() -> str:
 def send_email(outbox_dir: str | Path, to: str, subject: str, body: str) -> dict[str, object]:
     """Send one email, or write it to the outbox when SMTP is not configured."""
     message = EmailMessage()
-    message["From"] = SENDER
+    message["From"] = os.environ.get("STUDYSPACE_SMTP_FROM", SENDER)
     message["To"] = to
     message["Subject"] = subject
     message["Date"] = email.utils.formatdate(localtime=True)
     message.set_content(body)
 
     host = os.environ.get("STUDYSPACE_SMTP_HOST")
+    user = os.environ.get("STUDYSPACE_SMTP_USER")
+    password = os.environ.get("STUDYSPACE_SMTP_PASSWORD")
     if host:
+        port = int(os.environ.get("STUDYSPACE_SMTP_PORT", "587" if user else "25"))
         try:
-            with smtplib.SMTP(host, int(os.environ.get("STUDYSPACE_SMTP_PORT", "25")), timeout=5) as smtp:
+            with smtplib.SMTP(host, port, timeout=10) as smtp:
+                smtp.ehlo()
+                if port != 25:
+                    smtp.starttls()
+                    smtp.ehlo()
+                if user and password:
+                    smtp.login(user, password)
                 smtp.send_message(message)
             return {"mode": "smtp", "to": to, "subject": subject, "sent_at": _now()}
-        except OSError:
+        except (OSError, smtplib.SMTPException):
             pass  # fall through to the outbox so a failed send never breaks a booking
 
     directory = Path(outbox_dir)
