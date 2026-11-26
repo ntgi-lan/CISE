@@ -82,8 +82,17 @@ function cancelButton(booking) {
       return;
     }
     try {
-      await requestJson(`/api/bookings/${booking.id}`, { method: "DELETE" });
+      const result = await requestJson(`/api/bookings/${booking.id}`, {
+        method: "DELETE",
+      });
       await loadAll();
+      await loadWaitlist();
+      if (result && result.promoted) {
+        setStatus(
+          elements.allStatus,
+          `${result.promoted.name} was promoted to ${result.promoted.start.slice(11, 16)}–${result.promoted.end.slice(11, 16)}.`
+        );
+      }
     } catch (error) {
       setStatus(elements.allStatus, error.message, true);
     }
