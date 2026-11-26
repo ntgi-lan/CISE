@@ -22,6 +22,8 @@ const state = {
   bookings: [],
   selectedRoom: null,
   identity: null,
+  mode: "book",
+  roomIndex: {},
 };
 
 const elements = {
@@ -33,6 +35,8 @@ const elements = {
   building: document.getElementById("search-building"),
   searchStatus: document.getElementById("search-status"),
   results: document.getElementById("room-results"),
+  takenSection: document.getElementById("taken-section"),
+  takenList: document.getElementById("taken-list"),
   mySection: document.getElementById("my-section"),
   myDate: document.getElementById("my-date"),
   myStatus: document.getElementById("my-status"),
@@ -224,6 +228,51 @@ function renderRooms(rooms) {
   }
 }
 
+function renderTaken(bookings) {
+  const start = toIso(state.date, state.start);
+  const end = toIso(state.date, state.end);
+  const taken = new Map();
+  for (const booking of bookings) {
+    if (booking.start < end && booking.end > start) {
+      if (!taken.has(booking.room_id)) {
+        taken.set(booking.room_id, []);
+      }
+      taken.get(booking.room_id).push(booking);
+    }
+  }
+  elements.takenList.replaceChildren();
+  elements.takenSection.hidden = taken.size === 0;
+  for (const [roomId, rows] of taken) {
+    const room = state.roomIndex[roomId] || { id: roomId, name: roomId };
+    const item = document.createElement("div");
+    item.className = "taken-item";
+    const label = document.createElement("span");
+    const times = rows
+      .map((row) => `${row.start.slice(11, 16)}–${row.end.slice(11, 16)}`)
+      .join(", ");
+    label.textContent = `${room.name} · taken ${times}`;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "ghost-button";
+    button.textContent = "Join waitlist";
+    button.addEventListener("click", () => openBookingDialog(room, "waitlist"));
+    item.append(label, button);
+    elements.takenList.append(item);
+  }
+}
+
+async function loadRooms() {
+  try {
+    const payload = await requestJson("/api/rooms");
+    state.roomIndex = {};
+    for (const room of payload.rooms) {
+      state.roomIndex[room.id] = room;
+    }
+  } catch (error) {
+    /* the index is a convenience; search still works without it */
+  }
+}
+
 function openRoomDialog(room) {
   state.selectedRoom = room;
   elements.roomTitle.textContent = room.name;
@@ -384,6 +433,7 @@ async function loadBookings() {
     renderBookings(payload.bookings);
     renderMyBookings();
     renderStaff(payload.bookings);
+    renderTaken(payload.bookings);
     setStatus(elements.bookingsStatus, "");
   } catch (error) {
     setStatus(elements.bookingsStatus, error.message, true);
@@ -447,9 +497,17 @@ async function search() {
   }
 }
 
-function openBookingDialog(room) {
+function openBookingDialog(room, mode = "book") {
   state.selectedRoom = room;
+  state.mode = mode;
   elements.dialogRoomName.textContent = room.name;
+  const heading = document.getElementById("dialog-title");
+  if (heading.firstChild) {
+    heading.firstChild.textContent =
+      mode === "waitlist" ? "Waitlist for " : "Book ";
+  }
+  document.getElementById("dialog-submit").textContent =
+    mode === "waitlist" ? "Join waitlist" : "Confirm booking";
   elements.dialogSlot.textContent = `${state.date}, ${state.start}–${state.end}`;
   elements.dialogError.textContent = "";
   elements.alternatives.replaceChildren();
@@ -572,6 +630,30 @@ async function submitBooking() {
     return;
   }
   elements.dialogError.textContent = "";
+  if (state.mode === "waitlist") {
+    try {
+      const payload = await requestJson("/api/waitlist", {
+        method: "POST",
+        body: JSON.stringify({
+          room_id: state.selectedRoom.id,
+          name: elements.bookingName.value.trim(),
+          email: elements.bookingEmail.value.trim(),
+          start: toIso(state.date, state.start),
+          end: toIso(state.date, state.end),
+        }),
+      });
+      elements.alternatives.replaceChildren();
+      const note = document.createElement("p");
+      note.className = "alternative-note";
+      note.textContent =
+        `You are number ${payload.position} on the waitlist. ` +
+        "If the slot is cancelled, it is booked for you automatically.";
+      elements.alternatives.append(note);
+    } catch (error) {
+      setStatus(elements.dialogError, error.message, true);
+    }
+    return;
+  }
   try {
     await requestJson("/api/bookings", {
       method: "POST",
@@ -620,6 +702,7 @@ elements.bookingForm.addEventListener("submit", (event) => {
 
 function initialise() {
   loadIdentity();
+  loadRooms();
   elements.date.value = localDateString(tomorrow());
   search();
 }
