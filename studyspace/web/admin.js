@@ -18,6 +18,8 @@ const elements = {
   roomTable: document.getElementById("room-table"),
   allStatus: document.getElementById("all-status"),
   allTable: document.getElementById("all-table"),
+  waitlistStatus: document.getElementById("waitlist-status"),
+  waitlistTable: document.getElementById("waitlist-table"),
 };
 
 function setStatus(element, message, isError = false) {
@@ -109,6 +111,31 @@ async function loadRooms() {
   }
 }
 
+async function loadWaitlist() {
+  try {
+    const payload = await requestJson("/api/waitlist");
+    if (!payload.entries.length) {
+      elements.waitlistTable.textContent = "Nobody is waiting.";
+      return;
+    }
+    elements.waitlistTable.replaceChildren(
+      buildTable(
+        ["Position", "Room", "Date", "Time", "Name", "Email"],
+        payload.entries.map((entry, index) => [
+          String(index + 1),
+          entry.room_id,
+          entry.start.slice(0, 10),
+          `${entry.start.slice(11, 16)}–${entry.end.slice(11, 16)}`,
+          entry.name,
+          entry.email,
+        ])
+      )
+    );
+  } catch (error) {
+    setStatus(elements.waitlistStatus, error.message, true);
+  }
+}
+
 async function loadAll() {
   try {
     const payload = await requestJson("/api/bookings?all=1");
@@ -166,6 +193,7 @@ elements.roomForm.addEventListener("submit", addRoom);
 
 function initialise() {
   loadRooms();
+  loadWaitlist();
   loadAll();
 }
 

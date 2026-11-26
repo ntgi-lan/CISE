@@ -579,3 +579,24 @@ dialog input {
 .admin-main {
   margin-top: 0;
 }
+
+/* ---------------------------------------------------------------- alternatives */
+.alternatives {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.alternatives button {
+  text-align: left;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.86rem;
+}
+
+.alternative-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}

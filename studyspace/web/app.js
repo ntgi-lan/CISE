@@ -63,6 +63,7 @@ const elements = {
   bookingName: document.getElementById("booking-name"),
   bookingEmail: document.getElementById("booking-email"),
   dialogError: document.getElementById("dialog-error"),
+  alternatives: document.getElementById("dialog-alternatives"),
   dialogCancel: document.getElementById("dialog-cancel"),
 };
 
@@ -97,7 +98,11 @@ async function requestJson(path, options = {}) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = payload.error || {};
-    throw new Error(error.message || `Request failed with status ${response.status}.`);
+    const failure = new Error(
+      error.message || `Request failed with status ${response.status}.`
+    );
+    failure.details = error.details || null;
+    throw failure;
   }
   return payload;
 }
@@ -447,6 +452,7 @@ function openBookingDialog(room) {
   elements.dialogRoomName.textContent = room.name;
   elements.dialogSlot.textContent = `${state.date}, ${state.start}–${state.end}`;
   elements.dialogError.textContent = "";
+  elements.alternatives.replaceChildren();
   if (state.identity) {
     elements.bookingName.value = state.identity.name;
     elements.bookingEmail.value = state.identity.email;
@@ -458,6 +464,107 @@ function openBookingDialog(room) {
 function closeBookingDialog() {
   elements.dialog.close();
   elements.dialogError.textContent = "";
+  elements.alternatives.replaceChildren();
+}
+
+function shortTime(iso) {
+  return iso.slice(11, 16);
+}
+
+function alternativeButton(label, roomId, startIso, endIso) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  button.addEventListener("click", () => bookAlternative(roomId, startIso, endIso));
+  return button;
+}
+
+async function bookAlternative(roomId, startIso, endIso) {
+  try {
+    await requestJson("/api/bookings", {
+      method: "POST",
+      body: JSON.stringify({
+        room_id: roomId,
+        name: elements.bookingName.value.trim(),
+        email: elements.bookingEmail.value.trim(),
+        start: startIso,
+        end: endIso,
+      }),
+    });
+    closeBookingDialog();
+    await search();
+  } catch (error) {
+    setStatus(elements.dialogError, error.message, true);
+    renderAlternatives(error.details);
+  }
+}
+
+async function joinWaitlist() {
+  if (!state.selectedRoom) {
+    return;
+  }
+  try {
+    const payload = await requestJson("/api/waitlist", {
+      method: "POST",
+      body: JSON.stringify({
+        room_id: state.selectedRoom.id,
+        name: elements.bookingName.value.trim(),
+        email: elements.bookingEmail.value.trim(),
+        start: toIso(state.date, state.start),
+        end: toIso(state.date, state.end),
+      }),
+    });
+    elements.alternatives.replaceChildren();
+    const note = document.createElement("p");
+    note.className = "alternative-note";
+    note.textContent =
+      `You are number ${payload.position} on the waitlist. ` +
+      "If the slot is cancelled, it is booked for you automatically.";
+    elements.alternatives.append(note);
+  } catch (error) {
+    setStatus(elements.dialogError, error.message, true);
+  }
+}
+
+function renderAlternatives(details) {
+  elements.alternatives.replaceChildren();
+  if (!details) {
+    return;
+  }
+  if (details.conflict) {
+    const note = document.createElement("p");
+    note.className = "alternative-note";
+    note.textContent =
+      `Taken ${shortTime(details.conflict.start)}–${shortTime(details.conflict.end)}. ` +
+      "Here are two ways out:";
+    elements.alternatives.append(note);
+  }
+  if (details.next_free) {
+    elements.alternatives.append(
+      alternativeButton(
+        `Next free here: ${shortTime(details.next_free.start)}–${shortTime(details.next_free.end)}`,
+        details.next_free.room_id,
+        details.next_free.start,
+        details.next_free.end
+      )
+    );
+  }
+  for (const room of details.other_rooms || []) {
+    elements.alternatives.append(
+      alternativeButton(
+        `Book ${room.name} at ${shortTime(room.start)}–${shortTime(room.end)}`,
+        room.room_id,
+        room.start,
+        room.end
+      )
+    );
+  }
+  const waitlistButton = document.createElement("button");
+  waitlistButton.type = "button";
+  waitlistButton.className = "ghost-button";
+  waitlistButton.textContent = "Join the waitlist";
+  waitlistButton.addEventListener("click", joinWaitlist);
+  elements.alternatives.append(waitlistButton);
 }
 
 async function submitBooking() {
@@ -480,6 +587,7 @@ async function submitBooking() {
     await search();
   } catch (error) {
     setStatus(elements.dialogError, error.message, true);
+    renderAlternatives(error.details);
   }
 }
 

@@ -14,7 +14,7 @@ bookings, and at most two future bookings per email per date.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 
 from .models import Booking, BookingRequest, Room
 
@@ -32,15 +32,25 @@ WEEKEND_CLOSE = time(18, 0)
 class RuleViolation(Exception):
     """A request that breaks a booking or input-validation rule."""
 
-    def __init__(self, code: str, message: str, status: int = 400) -> None:
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        status: int = 400,
+        details: dict[str, object] | None = None,
+    ) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
         self.status = status
+        self.details = details
 
     def to_dict(self) -> dict[str, object]:
         """Return the JSON error envelope for this violation."""
-        return {"error": {"code": self.code, "message": self.message}}
+        error: dict[str, object] = {"code": self.code, "message": self.message}
+        if self.details is not None:
+            error["details"] = self.details
+        return {"error": error}
 
 
 def open_hours_for(day: date) -> tuple[time, time]:
@@ -151,6 +161,43 @@ def overlaps(
 ) -> bool:
     """Return True when the two half-open time windows intersect."""
     return start < other_end and other_start < end
+
+
+def find_overlap(
+    room_id: str, start: datetime, end: datetime, bookings: Iterable[Booking]
+) -> Booking | None:
+    """Return the booking that intersects the window, or None (FR-03)."""
+    for booking in bookings:
+        if booking.room_id == room_id and overlaps(
+            start, end, booking.start, booking.end
+        ):
+            return booking
+    return None
+
+
+def next_free_window(
+    room_id: str,
+    day: date,
+    earliest: datetime,
+    duration: timedelta,
+    bookings: Iterable[Booking],
+    step_minutes: int = 30,
+) -> tuple[datetime, datetime] | None:
+    """Find the first free window of *duration* after *earliest* (FR-03 helper)."""
+    opening, closing = open_hours_for(day)
+    open_at = datetime.combine(day, opening)
+    close_at = datetime.combine(day, closing)
+    candidate = max(earliest, open_at)
+    if candidate.minute % step_minutes or candidate.second:
+        candidate = candidate.replace(second=0, microsecond=0)
+        remainder = candidate.minute % step_minutes
+        if remainder:
+            candidate += timedelta(minutes=step_minutes - remainder)
+    while candidate + duration <= close_at:
+        if find_overlap(room_id, candidate, candidate + duration, bookings) is None:
+            return candidate, candidate + duration
+        candidate += timedelta(minutes=step_minutes)
+    return None
 
 
 def check_overlap(

@@ -17,8 +17,10 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from . import __version__
-from .models import BookingRequest, Room
+from .models import BookingRequest, format_datetime, Room
 from .rules import (
+    find_overlap,
+    next_free_window,
     RuleViolation,
     check_daily_limit,
     check_overlap,
@@ -93,7 +95,9 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
             else:
                 self._send_error(404, "not_found", "Unknown endpoint.")
         except RuleViolation as violation:
-            self._send_error(violation.status, violation.code, violation.message)
+            self._send_error(
+                violation.status, violation.code, violation.message, violation.details
+            )
         except Exception as error:  # pragma: no cover - defensive last resort
             self._send_error(500, "internal_error", f"Unexpected server error: {error}")
 
@@ -116,6 +120,13 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
                 return
             if method == "POST":
                 self._create_booking()
+                return
+        if path == "/api/waitlist":
+            if method == "GET":
+                self._send_json(200, self._waitlist_payload(query))
+                return
+            if method == "POST":
+                self._create_waitlist()
                 return
         if path.startswith("/api/bookings/") and method == "DELETE":
             self._delete_booking(path.rsplit("/", 1)[-1])
@@ -239,6 +250,125 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
             "count": len(bookings),
         }
 
+    def _alternatives(self, request, conflict, day_bookings):
+        """Suggest the next free window in this room and other free rooms (FR-11)."""
+        duration = request.end - request.start
+        following = next_free_window(
+            request.room_id, request.day, request.end, duration, day_bookings
+        )
+        free_rooms = rooms_free_for_window(
+            self.server.rooms, day_bookings, request.start, request.end, 0
+        )
+        others = [room for room in free_rooms if room.id != request.room_id][:3]
+        return {
+            "conflict": {
+                "room_id": conflict.room_id,
+                "start": format_datetime(conflict.start),
+                "end": format_datetime(conflict.end),
+            },
+            "next_free": (
+                {
+                    "room_id": request.room_id,
+                    "start": format_datetime(following[0]),
+                    "end": format_datetime(following[1]),
+                }
+                if following
+                else None
+            ),
+            "other_rooms": [
+                {
+                    "room_id": room.id,
+                    "name": room.name,
+                    "start": format_datetime(request.start),
+                    "end": format_datetime(request.end),
+                }
+                for room in others
+            ],
+        }
+
+    def _create_waitlist(self) -> None:
+        payload = self._read_json_object()
+        request = self._parse_booking_request(payload)
+        if request.room_id not in self.server.rooms_by_id:
+            raise RuleViolation(
+                "room_not_found",
+                f"Room '{request.room_id}' does not exist.",
+                status=404,
+            )
+        now = self.server.clock()
+        validate_booking(request, now)
+        day_bookings = self.server.storage.list_for_date(request.start.date())
+        if find_overlap(request.room_id, request.start, request.end, day_bookings) is None:
+            raise RuleViolation(
+                "room_free",
+                "The room is free for that window; book it directly.",
+                status=400,
+            )
+        existing = self.server.storage.find_waitlist_by_email(
+            request.room_id, request.email, request.start
+        )
+        if existing is not None:
+            raise RuleViolation(
+                "already_waiting",
+                "You are already on the waitlist for that slot.",
+                status=409,
+            )
+        entry_id, position = self.server.storage.add_waitlist(
+            request.room_id, request.name, request.email, request.start, request.end
+        )
+        self._send_json(
+            201,
+            {
+                "id": entry_id,
+                "position": position,
+                "room_id": request.room_id,
+                "start": format_datetime(request.start),
+                "end": format_datetime(request.end),
+                "message": "You will be booked automatically if the slot is cancelled.",
+            },
+            headers={"Location": f"/api/waitlist/{entry_id}"},
+        )
+
+    def _waitlist_payload(self, query: dict[str, list[str]]) -> dict[str, object]:
+        values = query.get("date")
+        day = None
+        if values:
+            try:
+                day = date.fromisoformat(values[0])
+            except ValueError as error:
+                raise RuleViolation(
+                    "invalid_query",
+                    "Query parameter 'date' must use the form YYYY-MM-DD.",
+                ) from error
+        entries = self.server.storage.list_waitlist(day)
+        return {"entries": entries, "count": len(entries)}
+
+    def _promote_waitlist(self, booking) -> object | None:
+        now = self.server.clock()
+        for entry in self.server.storage.waitlist_for_room_day(
+            booking.room_id, booking.start.date()
+        ):
+            start = datetime.fromisoformat(str(entry["start"]))
+            end = datetime.fromisoformat(str(entry["end"]))
+            if start < now:
+                self.server.storage.remove_waitlist(int(entry["id"]))
+                continue
+            day_bookings = self.server.storage.list_for_date(start.date())
+            if find_overlap(booking.room_id, start, end, day_bookings) is not None:
+                continue
+            promoted = self.server.storage.create(
+                BookingRequest(
+                    room_id=booking.room_id,
+                    name=str(entry["name"]),
+                    email=str(entry["email"]),
+                    start=start,
+                    end=end,
+                )
+            )
+            self.server.storage.remove_waitlist(int(entry["id"]))
+            return promoted
+        return None
+
     def _create_booking(self) -> None:
         payload = self._read_json_object()
         request = self._parse_booking_request(payload)
@@ -257,7 +387,16 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
         # half-open, so a booking that ends at 11:00 and one that starts at 11:00 do not
         # overlap. This runs after the daily-limit check and before persistence, so a
         # refused request creates no record.
-        check_overlap(request.room_id, request.start, request.end, day_bookings)
+        conflict = find_overlap(request.room_id, request.start, request.end, day_bookings)
+        if conflict is not None:
+            raise RuleViolation(
+                "overlap",
+                f"Room {request.room_id} is already booked from "
+                f"{conflict.start:%H:%M} to {conflict.end:%H:%M} on "
+                f"{conflict.start.date().isoformat()}.",
+                status=409,
+                details=self._alternatives(request, conflict, day_bookings),
+            )
 
         booking = self.server.storage.create(request)
         self._send_json(
@@ -273,12 +412,23 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
             raise RuleViolation(
                 "invalid_request", "Booking id must be an integer."
             ) from error
-        if not self.server.storage.delete(booking_id):
+        booking = self.server.storage.get(booking_id)
+        if booking is None or not self.server.storage.delete(booking_id):
             raise RuleViolation(
                 "booking_not_found",
                 f"Booking {booking_id} does not exist.",
                 status=404,
             )
+        promoted = self._promote_waitlist(booking)
+        if promoted is not None:
+            self._send_json(
+                200,
+                {
+                    "promoted": promoted.to_dict(),
+                    "message": "The cancelled slot was given to the first person on the waitlist.",
+                },
+            )
+            return
         self._send_json(204, None)
 
     # -- request parsing helpers --------------------------------------------
@@ -426,8 +576,17 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
         if body:
             self.wfile.write(body)
 
-    def _send_error(self, status: int, code: str, message: str) -> None:
-        self._send_json(status, {"error": {"code": code, "message": message}})
+    def _send_error(
+        self,
+        status: int,
+        code: str,
+        message: str,
+        details: dict[str, object] | None = None,
+    ) -> None:
+        error: dict[str, object] = {"code": code, "message": message}
+        if details is not None:
+            error["details"] = details
+        self._send_json(status, {"error": error})
 
 
 def create_server(
