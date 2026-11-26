@@ -46,6 +46,7 @@ const elements = {
   bookingList: document.getElementById("booking-list"),
   staffPanel: document.getElementById("staff-panel"),
   staffStats: document.getElementById("staff-stats"),
+  staffHeatmap: document.getElementById("staff-heatmap"),
   staffTable: document.getElementById("staff-table"),
   identityLabel: document.getElementById("identity-label"),
   identityButton: document.getElementById("identity-button"),
@@ -433,6 +434,70 @@ function renderMyBookings() {
   elements.myList.append(list);
 }
 
+const HEAT_START = 8;
+const HEAT_END = 22;
+
+function slotIndex(iso) {
+  const hour = Number(iso.slice(11, 13));
+  const minute = Number(iso.slice(14, 16));
+  return (hour - HEAT_START) * 2 + (minute >= 30 ? 1 : 0);
+}
+
+function renderHeatmap(bookings) {
+  const slots = (HEAT_END - HEAT_START) * 2;
+  const grid = document.createElement("div");
+  grid.className = "heatmap-grid";
+  grid.style.gridTemplateColumns = `4.6rem repeat(${slots}, 1fr)`;
+
+  const corner = document.createElement("span");
+  corner.className = "hm-corner";
+  grid.append(corner);
+  for (let hour = HEAT_START; hour < HEAT_END; hour += 1) {
+    const label = document.createElement("span");
+    label.className = "hm-hour";
+    label.style.gridColumn = "span 2";
+    label.textContent = `${String(hour).padStart(2, "0")}`;
+    grid.append(label);
+  }
+
+  const booked = new Map();
+  for (const booking of bookings) {
+    const start = slotIndex(booking.start);
+    const end = slotIndex(booking.end);
+    if (!booked.has(booking.room_id)) {
+      booked.set(booking.room_id, new Map());
+    }
+    const room = booked.get(booking.room_id);
+    for (let index = start; index < end; index += 1) {
+      if (index >= 0 && index < slots) {
+        room.set(index, booking);
+      }
+    }
+  }
+
+  const roomIds = Object.keys(state.roomIndex).sort();
+  for (const roomId of roomIds) {
+    const label = document.createElement("span");
+    label.className = "hm-label";
+    label.textContent = roomId;
+    grid.append(label);
+    const room = booked.get(roomId) || new Map();
+    for (let index = 0; index < slots; index += 1) {
+      const cell = document.createElement("span");
+      cell.className = "hm-cell";
+      const booking = room.get(index);
+      if (booking) {
+        cell.classList.add("booked");
+        cell.title =
+          `${roomId} · ${booking.start.slice(11, 16)}–${booking.end.slice(11, 16)} · ${booking.name}`;
+      }
+      grid.append(cell);
+    }
+  }
+
+  elements.staffHeatmap.replaceChildren(grid);
+}
+
 function statCard(label, value, hint) {
   const card = document.createElement("div");
   card.className = "stat-card";
@@ -456,6 +521,7 @@ function renderStaff(bookings) {
   const capacityHours = 10 * 14; // ten rooms, 08:00-22:00
   const utilisation = Math.round((hours / capacityHours) * 100);
 
+  renderHeatmap(bookings);
   elements.staffStats.replaceChildren(
     statCard("bookings", String(bookings.length), `on ${state.date}`),
     statCard("rooms in use", String(rooms.size), "of 10 seeded rooms"),

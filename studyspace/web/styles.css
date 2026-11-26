@@ -751,3 +751,78 @@ dialog input {
   font-size: 0.9rem;
   z-index: 30;
 }
+
+/* ---------------------------------------------------------------- heatmap */
+.heatmap-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0.2rem 0 0.6rem;
+}
+
+.heatmap-title {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.heatmap-legend {
+  font-size: 0.74rem;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.swatch {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 3px;
+  margin-left: 0.4rem;
+}
+
+.swatch.free {
+  background: #f3e6cd;
+}
+
+.swatch.booked {
+  background: var(--primary);
+}
+
+.heatmap-grid {
+  display: grid;
+  gap: 2px;
+  align-items: center;
+  margin-bottom: 1.1rem;
+}
+
+.hm-corner {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.hm-hour {
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.hm-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.hm-cell {
+  height: 14px;
+  border-radius: 3px;
+  background: #f3e6cd;
+}
+
+.hm-cell.booked {
+  background: var(--primary);
+}
