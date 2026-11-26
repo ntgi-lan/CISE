@@ -86,9 +86,21 @@
 
     <section aria-labelledby="staff-heading" class="staff-section">
       <details id="staff-panel" open>
-        <summary id="staff-heading">Staff view · occupancy and all bookings</summary>
-        <div id="staff-stats" class="stats"></div>
-        <div id="staff-table" class="table-wrap"></div>
+        <summary id="staff-heading">
+          <span class="staff-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="4" y="12" width="3.5" height="7" rx="1"></rect>
+              <rect x="10.25" y="8" width="3.5" height="11" rx="1"></rect>
+              <rect x="16.5" y="4" width="3.5" height="15" rx="1"></rect>
+            </svg>
+          </span>
+          <span class="staff-title">Staff view</span>
+          <span class="staff-sub">occupancy and all bookings</span>
+        </summary>
+        <div class="staff-body">
+          <div id="staff-stats" class="stats"></div>
+          <div id="staff-table" class="table-wrap"></div>
+        </div>
       </details>
     </section>
   </main>

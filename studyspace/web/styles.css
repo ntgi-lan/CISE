@@ -461,11 +461,70 @@ dialog input {
 }
 
 /* ---------------------------------------------------------------- staff */
+.staff-section {
+  padding: 0;
+  overflow: hidden;
+}
+
 .staff-section summary {
+  list-style: none;
   cursor: pointer;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.95rem 1.15rem;
+  background: linear-gradient(120deg, #3a2130 0%, #4a2c3a 60%, #5a3546 100%);
+  color: #fff;
+  border-radius: 14px;
+}
+
+.staff-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.staff-section summary::after {
+  content: "";
+  margin-left: auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.staff-section[open] summary::after {
+  transform: rotate(-135deg);
+}
+
+.staff-section[open] summary {
+  border-radius: 14px 14px 0 0;
+}
+
+.staff-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: rgb(201 150 63 / 22%);
+  border: 1px solid rgb(201 150 63 / 35%);
+  color: var(--accent);
+  flex: none;
+}
+
+.staff-title {
+  font-weight: 700;
   font-size: 1.02rem;
-  color: var(--primary);
+}
+
+.staff-sub {
+  font-size: 0.82rem;
+  color: rgb(255 255 255 / 65%);
+}
+
+.staff-body {
+  padding: 1rem 1.15rem 1.15rem;
 }
 
 .stats {
