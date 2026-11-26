@@ -78,6 +78,70 @@ class BuildingFilterTests(ServerTestCase):
         self.assertEqual(body["rooms"], [])
 
 
+class RoomAdminTests(ServerTestCase):
+    """The staff page can add a room to the catalogue."""
+
+    def test_create_room_returns_201_and_appears_in_catalogue(self) -> None:
+        status, body = self.api.request(
+            "POST",
+            "/api/rooms",
+            {
+                "id": "WA-301",
+                "name": "WA-301 Study Room",
+                "building": "WA",
+                "capacity": 6,
+                "features": ["whiteboard", "monitor"],
+            },
+        )
+        self.assertEqual(status, 201)
+        self.assertEqual(body["id"], "WA-301")
+        status, catalogue = self.api.request("GET", "/api/rooms")
+        self.assertEqual(status, 200)
+        self.assertIn("WA-301", {room["id"] for room in catalogue["rooms"]})
+        self.assertEqual(catalogue["count"], 11)
+
+    def test_duplicate_room_returns_409(self) -> None:
+        payload = {
+            "id": "WA-201",
+            "name": "Duplicate",
+            "building": "WA",
+            "capacity": 4,
+            "features": [],
+        }
+        status, body = self.api.request("POST", "/api/rooms", payload)
+        self.assertEqual(status, 409)
+        self.assertEqual(body["error"]["code"], "room_exists")
+
+    def test_invalid_room_returns_400(self) -> None:
+        status, body = self.api.request(
+            "POST",
+            "/api/rooms",
+            {"id": "", "name": "", "building": "", "capacity": 0, "features": []},
+        )
+        self.assertEqual(status, 400)
+        self.assertEqual(body["error"]["code"], "invalid_room")
+
+
+class AllBookingsTests(ServerTestCase):
+    """The staff view lists bookings across dates."""
+
+    def test_all_flag_returns_bookings_from_every_date(self) -> None:
+        for day in ("2026-11-05", "2026-11-06"):
+            status, _ = self.api.request(
+                "POST",
+                "/api/bookings",
+                booking_payload(start=f"{day}T10:00:00", end=f"{day}T11:00:00"),
+            )
+            self.assertEqual(status, 201)
+        status, body = self.api.request("GET", "/api/bookings?all=1")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["count"], 2)
+        self.assertEqual(
+            {booking["start"][:10] for booking in body["bookings"]},
+            {"2026-11-05", "2026-11-06"},
+        )
+
+
 class BookingApiTests(ServerTestCase):
     """FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-08, FR-09."""
 

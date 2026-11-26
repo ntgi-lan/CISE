@@ -381,3 +381,19 @@ dialog input {
 .detail-list dd {
   margin: 0;
 }
+
+.link-button {
+  text-decoration: none;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--accent);
+  background: transparent;
+}
+
+.link-button:hover {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}

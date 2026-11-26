@@ -26,7 +26,12 @@ from .rules import (
     validate_booking,
     validate_search,
 )
-from .storage import BookingStorage, load_rooms
+from .storage import (
+    BookingStorage,
+    append_extra_room,
+    load_extra_rooms,
+    load_rooms,
+)
 
 WEB_DIR = Path(__file__).with_name("web")
 MAX_BODY_BYTES = 64 * 1024
@@ -44,10 +49,12 @@ class StudySpaceServer(ThreadingHTTPServer):
         storage: BookingStorage,
         rooms: list[Room],
         clock: Callable[[], datetime],
+        rooms_extra_path: str | Path = "data/rooms_added.json",
     ) -> None:
         super().__init__(address, StudySpaceHandler)
         self.storage = storage
         self.rooms = rooms
+        self.rooms_extra_path = rooms_extra_path
         self.rooms_by_id = {room.id: room for room in rooms}
         self.clock = clock
 
@@ -96,9 +103,13 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
         if path == "/api/health" and method == "GET":
             self._send_json(200, {"status": "ok", "version": __version__})
             return
-        if path == "/api/rooms" and method == "GET":
-            self._send_json(200, self._rooms_payload(query))
-            return
+        if path == "/api/rooms":
+            if method == "GET":
+                self._send_json(200, self._rooms_payload(query))
+                return
+            if method == "POST":
+                self._create_room()
+                return
         if path == "/api/bookings":
             if method == "GET":
                 self._send_json(200, self._bookings_payload(query))
@@ -147,9 +158,69 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
             "count": len(free_rooms),
         }
 
+    def _create_room(self) -> None:
+        payload = self._read_json_object()
+        room = self._parse_room(payload)
+        if room.id in self.server.rooms_by_id:
+            raise RuleViolation(
+                "room_exists", f"Room '{room.id}' already exists.", status=409
+            )
+        append_extra_room(self.server.rooms_extra_path, room)
+        self.server.rooms.append(room)
+        self.server.rooms_by_id[room.id] = room
+        self._send_json(
+            201, room.to_dict(), headers={"Location": f"/api/rooms/{room.id}"}
+        )
+
+    def _parse_room(self, payload: dict[str, object]) -> Room:
+        identifier = str(payload.get("id", "")).strip().upper()
+        name = str(payload.get("name", "")).strip()
+        building = str(payload.get("building", "")).strip().upper()
+        capacity_raw = payload.get("capacity", 0)
+        features_raw = payload.get("features", [])
+        if not identifier or not all(
+            part for part in [identifier.replace("-", "").replace(" ", "")]
+        ):
+            raise RuleViolation(
+                "invalid_room", "Room id is required, for example WA-301."
+            )
+        if not name:
+            raise RuleViolation("invalid_room", "Room name is required.")
+        if not building:
+            raise RuleViolation("invalid_room", "Building is required.")
+        try:
+            capacity = int(capacity_raw)
+        except (TypeError, ValueError) as error:
+            raise RuleViolation(
+                "invalid_room", "Capacity must be a whole number."
+            ) from error
+        if capacity < 1 or capacity > 50:
+            raise RuleViolation(
+                "invalid_room", "Capacity must be between 1 and 50."
+            )
+        if not isinstance(features_raw, list) or not all(
+            isinstance(feature, str) for feature in features_raw
+        ):
+            raise RuleViolation(
+                "invalid_room", "Features must be a list of strings."
+            )
+        return Room(
+            id=identifier,
+            name=name,
+            building=building,
+            capacity=capacity,
+            features=tuple(feature.strip() for feature in features_raw if feature.strip()),
+        )
+
     # -- bookings (FR-03 to FR-09) -------------------------------------------
 
     def _bookings_payload(self, query: dict[str, list[str]]) -> dict[str, object]:
+        if query.get("all", [""])[0] == "1":
+            bookings = self.server.storage.list_all()
+            return {
+                "bookings": [booking.to_dict() for booking in bookings],
+                "count": len(bookings),
+            }
         values = query.get("date")
         if values:
             try:
@@ -365,6 +436,7 @@ def create_server(
     db_path: str | Path = "data/studyspace.db",
     rooms_path: str | Path = "data/rooms.json",
     clock: Callable[[], datetime] | None = None,
+    rooms_extra_path: str | Path | None = None,
 ) -> StudySpaceServer:
     """Build a configured server.
 
@@ -373,4 +445,16 @@ def create_server(
     """
     storage = BookingStorage(db_path)
     rooms = load_rooms(rooms_path)
-    return StudySpaceServer((host, port), storage, rooms, clock or datetime.now)
+    extra_path = (
+        Path(rooms_extra_path)
+        if rooms_extra_path is not None
+        else Path(rooms_path).with_name("rooms_added.json")
+    )
+    known = {room.id for room in rooms}
+    for room in load_extra_rooms(extra_path):
+        if room.id not in known:
+            rooms.append(room)
+            known.add(room.id)
+    return StudySpaceServer(
+        (host, port), storage, rooms, clock or datetime.now, extra_path
+    )

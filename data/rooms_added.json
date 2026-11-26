@@ -1,0 +1,14 @@
+{
+  "rooms": [
+    {
+      "id": "WA-301",
+      "name": "WA-301 Study Room",
+      "building": "WA",
+      "capacity": 6,
+      "features": [
+        "whiteboard",
+        "monitor"
+      ]
+    }
+  ]
+}

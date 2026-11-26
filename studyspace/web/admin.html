@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StudySpace — staff admin</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">StudySpace</span>
+      <span class="version">v0.2.0</span>
+    </div>
+    <div class="identity">
+      <a class="ghost-button link-button" href="/">Back to booking</a>
+    </div>
+  </header>
+
+  <header class="site-header">
+    <h1>Staff admin</h1>
+    <p>Add a room to the catalogue and manage every booking in one place.</p>
+  </header>
+
+  <main>
+    <section aria-labelledby="add-room-heading">
+      <h2 id="add-room-heading">Add a room</h2>
+      <form id="room-form" class="search-form">
+        <label>Room id
+          <input type="text" id="room-id" placeholder="WA-301" required>
+        </label>
+        <label>Name
+          <input type="text" id="room-name" placeholder="WA-301 Study Room" required>
+        </label>
+        <label>Building
+          <input type="text" id="room-building" placeholder="WA" maxlength="4" required>
+        </label>
+        <label>Capacity
+          <input type="number" id="room-capacity" min="1" max="50" value="4" required>
+        </label>
+        <label>Features
+          <input type="text" id="room-features" placeholder="whiteboard, monitor">
+        </label>
+        <button type="submit">Add room</button>
+      </form>
+      <p id="room-status" class="status" role="status"></p>
+      <div id="room-table" class="table-wrap"></div>
+    </section>
+
+    <section aria-labelledby="all-bookings-heading">
+      <h2 id="all-bookings-heading">All bookings</h2>
+      <p id="all-status" class="status" role="status"></p>
+      <div id="all-table" class="table-wrap"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>StudySpace v0.2.0 — staff view. Cancelling a booking is immediate.</p>
+  </footer>
+
+  <script src="admin.js"></script>
+</body>
+</html>

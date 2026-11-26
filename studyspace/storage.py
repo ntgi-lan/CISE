@@ -123,6 +123,14 @@ class BookingStorage:
             ).fetchall()
         return [self._to_booking(row) for row in rows]
 
+    def list_all(self, limit: int = 500) -> list[Booking]:
+        """Return recent bookings across every date, ordered by start (FR-09)."""
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM bookings ORDER BY start, id LIMIT ?", (limit,)
+            ).fetchall()
+        return [self._to_booking(row) for row in rows]
+
     def delete(self, booking_id: int) -> bool:
         """Delete a booking; return False when it does not exist (FR-08)."""
         with self._connection() as connection:
@@ -131,3 +139,39 @@ class BookingStorage:
             )
             deleted = cursor.rowcount > 0
         return deleted
+
+
+def load_extra_rooms(path: str | Path) -> list[Room]:
+    """Load rooms added through the API; they live beside the seed file."""
+    location = Path(path)
+    if not location.exists():
+        return []
+    payload = json.loads(location.read_text(encoding="utf-8"))
+    rooms = []
+    for row in payload.get("rooms", []):
+        rooms.append(
+            Room(
+                id=str(row["id"]),
+                name=str(row["name"]),
+                building=str(row["building"]),
+                capacity=int(row["capacity"]),
+                features=tuple(str(feature) for feature in row.get("features", [])),
+            )
+        )
+    return rooms
+
+
+def append_extra_room(path: str | Path, room: Room) -> None:
+    """Persist one added room without touching the seeded catalogue."""
+    location = Path(path)
+    location.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"rooms": []}
+    if location.exists():
+        payload = json.loads(location.read_text(encoding="utf-8"))
+        payload.setdefault("rooms", [])
+    payload["rooms"].append(room.to_dict())
+    temporary = location.with_suffix(".tmp")
+    temporary.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    temporary.replace(location)

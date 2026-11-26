@@ -1,10 +1,22 @@
+# Test results - StudySpace
+
+Recorded: 2026-11-26 13:58:56 +0800
+Command: python -m unittest discover -s tests -v
+Python: 3.12.14
+
+test_all_flag_returns_bookings_from_every_date (test_api.AllBookingsTests.test_all_flag_returns_bookings_from_every_date) ... ok
 test_create_list_and_cancel_booking (test_api.BookingApiTests.test_create_list_and_cancel_booking) ... ok
 test_daily_limit_returns_409_and_creates_no_record (test_api.BookingApiTests.test_daily_limit_returns_409_and_creates_no_record) ... ok
 test_overlap_returns_409_and_creates_no_record (test_api.BookingApiTests.test_overlap_returns_409_and_creates_no_record) ... ok
 test_search_returns_free_rooms_filtered_by_capacity (test_api.BookingApiTests.test_search_returns_free_rooms_filtered_by_capacity) ... ok
 test_validation_errors_use_the_json_error_contract (test_api.BookingApiTests.test_validation_errors_use_the_json_error_contract) ... ok
+test_search_filters_to_one_building (test_api.BuildingFilterTests.test_search_filters_to_one_building) ... ok
+test_unknown_building_returns_no_rooms (test_api.BuildingFilterTests.test_unknown_building_returns_no_rooms) ... ok
 test_health_reports_ok_and_version (test_api.HealthAndCatalogueTests.test_health_reports_ok_and_version) ... ok
 test_room_catalogue_returns_ten_seeded_rooms (test_api.HealthAndCatalogueTests.test_room_catalogue_returns_ten_seeded_rooms) ... ok
+test_create_room_returns_201_and_appears_in_catalogue (test_api.RoomAdminTests.test_create_room_returns_201_and_appears_in_catalogue) ... ok
+test_duplicate_room_returns_409 (test_api.RoomAdminTests.test_duplicate_room_returns_409) ... ok
+test_invalid_room_returns_400 (test_api.RoomAdminTests.test_invalid_room_returns_400) ... ok
 test_third_future_booking_for_the_same_email_is_rejected (test_rules.DailyLimitTests.test_third_future_booking_for_the_same_email_is_rejected) ... ok
 test_weekday_booking_after_closing_is_rejected (test_rules.OpeningHoursTests.test_weekday_booking_after_closing_is_rejected) ... ok
 test_weekday_booking_before_opening_is_rejected (test_rules.OpeningHoursTests.test_weekday_booking_before_opening_is_rejected) ... ok
@@ -20,6 +32,8 @@ test_duration_shorter_than_thirty_minutes_is_rejected (test_rules.SlotAndDuratio
 test_unaligned_slot_boundary_is_rejected (test_rules.SlotAndDurationTests.test_unaligned_slot_boundary_is_rejected) ... ok
 
 ----------------------------------------------------------------------
-Ran 20 tests in 3.776s
+Ran 26 tests in 7.000s
 
 OK
+
+
