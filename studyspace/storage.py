@@ -37,6 +37,14 @@ CREATE TABLE IF NOT EXISTS waitlist (
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_waitlist_room ON waitlist (room_id, start);
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    read_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_email ON notifications (email, id);
 """
 
 
@@ -202,6 +210,31 @@ class BookingStorage:
     def remove_waitlist(self, entry_id: int) -> None:
         with self._connection() as connection:
             connection.execute("DELETE FROM waitlist WHERE id = ?", (entry_id,))
+
+    def add_notification(self, email: str, message: str) -> int:
+        created_at = datetime.now().replace(microsecond=0)
+        with self._connection() as connection:
+            cursor = connection.execute(
+                "INSERT INTO notifications (email, message, created_at) VALUES (?, ?, ?)",
+                (email, message, format_datetime(created_at)),
+            )
+            return int(cursor.lastrowid or 0)
+
+    def list_notifications(self, email: str, limit: int = 50) -> list[dict[str, object]]:
+        with self._connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM notifications WHERE email = ? ORDER BY id DESC LIMIT ?",
+                (email, limit),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def mark_notifications_read(self, email: str) -> int:
+        with self._connection() as connection:
+            cursor = connection.execute(
+                "UPDATE notifications SET read_at = ? WHERE email = ? AND read_at IS NULL",
+                (format_datetime(datetime.now().replace(microsecond=0)), email),
+            )
+            return int(cursor.rowcount)
 
     def delete(self, booking_id: int) -> bool:
         """Delete a booking; return False when it does not exist (FR-08)."""

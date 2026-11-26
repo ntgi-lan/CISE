@@ -1,6 +1,6 @@
 # Test results - StudySpace
 
-Recorded: 2026-11-26 14:25:46 +0800
+Recorded: 2026-11-26 14:42:46 +0800
 Command: python -m unittest discover -s tests -v
 Python: 3.12.14
 
@@ -12,8 +12,13 @@ test_search_returns_free_rooms_filtered_by_capacity (test_api.BookingApiTests.te
 test_validation_errors_use_the_json_error_contract (test_api.BookingApiTests.test_validation_errors_use_the_json_error_contract) ... ok
 test_search_filters_to_one_building (test_api.BuildingFilterTests.test_search_filters_to_one_building) ... ok
 test_unknown_building_returns_no_rooms (test_api.BuildingFilterTests.test_unknown_building_returns_no_rooms) ... ok
+test_outbox_is_empty_without_a_promotion (test_api.EmailOutboxTests.test_outbox_is_empty_without_a_promotion) ... ok
+test_promotion_sends_one_email (test_api.EmailOutboxTests.test_promotion_sends_one_email) ... ok
 test_health_reports_ok_and_version (test_api.HealthAndCatalogueTests.test_health_reports_ok_and_version) ... ok
 test_room_catalogue_returns_ten_seeded_rooms (test_api.HealthAndCatalogueTests.test_room_catalogue_returns_ten_seeded_rooms) ... ok
+test_mark_read_clears_the_badge (test_api.NotificationTests.test_mark_read_clears_the_badge) ... ok
+test_notifications_are_per_email (test_api.NotificationTests.test_notifications_are_per_email) ... ok
+test_promotion_creates_a_notification (test_api.NotificationTests.test_promotion_creates_a_notification) ... ok
 test_next_free_slot_is_actually_bookable (test_api.OverlapExplanationTests.test_next_free_slot_is_actually_bookable) ... ok
 test_overlap_returns_conflict_and_alternatives (test_api.OverlapExplanationTests.test_overlap_returns_conflict_and_alternatives) ... ok
 test_suggested_other_room_is_actually_bookable (test_api.OverlapExplanationTests.test_suggested_other_room_is_actually_bookable) ... ok
@@ -39,7 +44,7 @@ test_duration_shorter_than_thirty_minutes_is_rejected (test_rules.SlotAndDuratio
 test_unaligned_slot_boundary_is_rejected (test_rules.SlotAndDurationTests.test_unaligned_slot_boundary_is_rejected) ... ok
 
 ----------------------------------------------------------------------
-Ran 33 tests in 11.143s
+Ran 38 tests in 14.396s
 
 OK
 

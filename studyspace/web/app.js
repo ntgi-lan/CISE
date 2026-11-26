@@ -50,6 +50,11 @@ const elements = {
   identityLabel: document.getElementById("identity-label"),
   identityButton: document.getElementById("identity-button"),
   identitySignout: document.getElementById("identity-signout"),
+  notifButton: document.getElementById("notif-button"),
+  notifBadge: document.getElementById("notif-badge"),
+  notifPanel: document.getElementById("notif-panel"),
+  notifList: document.getElementById("notif-list"),
+  toast: document.getElementById("toast"),
   identityDialog: document.getElementById("identity-dialog"),
   identityForm: document.getElementById("identity-form"),
   identityName: document.getElementById("identity-name"),
@@ -142,6 +147,77 @@ function clearIdentity() {
   }
   renderIdentity();
   renderMyBookings();
+  pollNotifications();
+}
+
+let lastUnread = 0;
+let notifTimer = null;
+
+function showToast(message) {
+  elements.toast.textContent = message;
+  elements.toast.hidden = false;
+  window.setTimeout(() => {
+    elements.toast.hidden = true;
+  }, 7000);
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("StudySpace", { body: message });
+  }
+}
+
+function renderNotifications(entries) {
+  elements.notifList.replaceChildren();
+  if (!entries.length) {
+    elements.notifList.textContent = "No notifications yet.";
+    return;
+  }
+  for (const entry of entries) {
+    const item = document.createElement("p");
+    item.className = entry.read_at ? "notif-item" : "notif-item unread";
+    item.textContent = entry.message;
+    elements.notifList.append(item);
+  }
+}
+
+async function pollNotifications() {
+  if (!state.identity) {
+    return;
+  }
+  try {
+    const payload = await requestJson(
+      `/api/notifications?email=${encodeURIComponent(state.identity.email)}`
+    );
+    elements.notifBadge.textContent = payload.unread;
+    elements.notifBadge.hidden = payload.unread === 0;
+    renderNotifications(payload.notifications);
+    if (payload.unread > lastUnread) {
+      const latest = payload.notifications.find((entry) => !entry.read_at);
+      if (latest) {
+        showToast(latest.message);
+      }
+    }
+    lastUnread = payload.unread;
+  } catch (error) {
+    /* polling is best effort */
+  }
+}
+
+async function openNotifications() {
+  const opening = elements.notifPanel.hidden;
+  elements.notifPanel.hidden = !opening;
+  if (!opening || !state.identity) {
+    return;
+  }
+  try {
+    await requestJson("/api/notifications/read", {
+      method: "POST",
+      body: JSON.stringify({ email: state.identity.email }),
+    });
+    elements.notifBadge.hidden = true;
+    lastUnread = 0;
+    await pollNotifications();
+  } catch (error) {
+    /* ignore */
+  }
 }
 
 function renderIdentity() {
@@ -152,6 +228,12 @@ function renderIdentity() {
   elements.identityButton.hidden = signedIn;
   elements.identitySignout.hidden = !signedIn;
   elements.mySection.hidden = !signedIn;
+  elements.notifButton.hidden = !signedIn;
+  if (!signedIn) {
+    elements.notifPanel.hidden = true;
+    elements.notifBadge.hidden = true;
+    lastUnread = 0;
+  }
   if (signedIn) {
     elements.myDate.textContent = state.date || "the selected date";
   }
@@ -175,6 +257,10 @@ function submitIdentity() {
   saveIdentity(name, email);
   elements.identityDialog.close();
   renderMyBookings();
+  pollNotifications();
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
 }
 
 // ---------------------------------------------------------------- rooms
@@ -673,6 +759,8 @@ async function submitBooking() {
   }
 }
 
+elements.notifButton.addEventListener("click", openNotifications);
+
 elements.searchForm.addEventListener("submit", (event) => {
   event.preventDefault();
   search();
@@ -703,6 +791,7 @@ elements.bookingForm.addEventListener("submit", (event) => {
 function initialise() {
   loadIdentity();
   loadRooms();
+  notifTimer = window.setInterval(pollNotifications, 5000);
   elements.date.value = localDateString(tomorrow());
   search();
 }

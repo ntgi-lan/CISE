@@ -28,6 +28,7 @@ from .rules import (
     validate_booking,
     validate_search,
 )
+from .mailer import list_outbox, send_email
 from .storage import (
     BookingStorage,
     append_extra_room,
@@ -52,11 +53,13 @@ class StudySpaceServer(ThreadingHTTPServer):
         rooms: list[Room],
         clock: Callable[[], datetime],
         rooms_extra_path: str | Path = "data/rooms_added.json",
+        outbox_dir: str | Path = "data/outbox",
     ) -> None:
         super().__init__(address, StudySpaceHandler)
         self.storage = storage
         self.rooms = rooms
         self.rooms_extra_path = rooms_extra_path
+        self.outbox_dir = outbox_dir
         self.rooms_by_id = {room.id: room for room in rooms}
         self.clock = clock
 
@@ -121,6 +124,16 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
             if method == "POST":
                 self._create_booking()
                 return
+        if path == "/api/notifications":
+            if method == "GET":
+                self._send_json(200, self._notifications_payload(query))
+                return
+        if path == "/api/notifications/read" and method == "POST":
+            self._mark_notifications_read()
+            return
+        if path == "/api/outbox" and method == "GET":
+            self._send_json(200, {"messages": list_outbox(self.server.outbox_dir)})
+            return
         if path == "/api/waitlist":
             if method == "GET":
                 self._send_json(200, self._waitlist_payload(query))
@@ -286,6 +299,25 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
             ],
         }
 
+    def _notifications_payload(self, query: dict[str, list[str]]) -> dict[str, object]:
+        values = query.get("email")
+        if not values or not values[0].strip():
+            raise RuleViolation(
+                "invalid_query", "Query parameter 'email' is required.", status=400
+            )
+        email = values[0].strip().lower()
+        entries = self.server.storage.list_notifications(email)
+        unread = sum(1 for entry in entries if entry["read_at"] is None)
+        return {"notifications": entries, "count": len(entries), "unread": unread}
+
+    def _mark_notifications_read(self) -> None:
+        payload = self._read_json_object()
+        email = str(payload.get("email", "")).strip().lower()
+        if not email:
+            raise RuleViolation("invalid_request", "Email is required.", status=400)
+        updated = self.server.storage.mark_notifications_read(email)
+        self._send_json(200, {"marked": updated})
+
     def _create_waitlist(self) -> None:
         payload = self._read_json_object()
         request = self._parse_booking_request(payload)
@@ -366,6 +398,18 @@ class StudySpaceHandler(BaseHTTPRequestHandler):
                 )
             )
             self.server.storage.remove_waitlist(int(entry["id"]))
+            message = (
+                f"Good news: you were promoted from the waitlist for "
+                f"{booking.room_id} on {start.date().isoformat()} "
+                f"{start:%H:%M}-{end:%H:%M}. The room is booked for you."
+            )
+            self.server.storage.add_notification(str(entry["email"]), message)
+            send_email(
+                self.server.outbox_dir,
+                str(entry["email"]),
+                "StudySpace: your waitlisted room is booked",
+                f"{message}\n\nStudySpace - one authoritative booking for every AUT study room.",
+            )
             return promoted
         return None
 
@@ -596,6 +640,7 @@ def create_server(
     rooms_path: str | Path = "data/rooms.json",
     clock: Callable[[], datetime] | None = None,
     rooms_extra_path: str | Path | None = None,
+    outbox_dir: str | Path | None = None,
 ) -> StudySpaceServer:
     """Build a configured server.
 
@@ -615,5 +660,10 @@ def create_server(
             rooms.append(room)
             known.add(room.id)
     return StudySpaceServer(
-        (host, port), storage, rooms, clock or datetime.now, extra_path
+        (host, port),
+        storage,
+        rooms,
+        clock or datetime.now,
+        extra_path,
+        Path(outbox_dir) if outbox_dir is not None else Path(rooms_path).with_name("outbox"),
     )

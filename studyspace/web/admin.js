@@ -20,6 +20,8 @@ const elements = {
   allTable: document.getElementById("all-table"),
   waitlistStatus: document.getElementById("waitlist-status"),
   waitlistTable: document.getElementById("waitlist-table"),
+  outboxStatus: document.getElementById("outbox-status"),
+  outboxTable: document.getElementById("outbox-table"),
 };
 
 function setStatus(element, message, isError = false) {
@@ -120,6 +122,28 @@ async function loadRooms() {
   }
 }
 
+async function loadOutbox() {
+  try {
+    const payload = await requestJson("/api/outbox");
+    if (!payload.messages.length) {
+      elements.outboxTable.textContent = "No emails sent yet.";
+      return;
+    }
+    elements.outboxTable.replaceChildren(
+      buildTable(
+        ["To", "Subject", "Message"],
+        payload.messages.map((message) => [
+          message.to,
+          message.subject,
+          message.body.length > 90 ? message.body.slice(0, 87) + "..." : message.body,
+        ])
+      )
+    );
+  } catch (error) {
+    setStatus(elements.outboxStatus, error.message, true);
+  }
+}
+
 async function loadWaitlist() {
   try {
     const payload = await requestJson("/api/waitlist");
@@ -202,6 +226,7 @@ elements.roomForm.addEventListener("submit", addRoom);
 
 function initialise() {
   loadRooms();
+  loadOutbox();
   loadWaitlist();
   loadAll();
 }

@@ -288,6 +288,89 @@ class WaitlistTests(ServerTestCase):
         self.assertEqual(entries["count"], 0)
 
 
+class NotificationTests(ServerTestCase):
+    """A promoted waiter receives a notification."""
+
+    def _promote(self):
+        status, booking = self.api.request("POST", "/api/bookings", booking_payload())
+        self.assertEqual(status, 201)
+        status, _ = self.api.request(
+            "POST",
+            "/api/waitlist",
+            booking_payload(
+                name="Bea Wait",
+                email="bea@autuni.ac.nz",
+                start=f"{BOOKING_DAY}T10:30:00",
+                end=f"{BOOKING_DAY}T11:30:00",
+            ),
+        )
+        self.assertEqual(status, 201)
+        status, _ = self.api.request("DELETE", f"/api/bookings/{booking['id']}")
+        self.assertEqual(status, 200)
+
+    def test_promotion_creates_a_notification(self) -> None:
+        self._promote()
+        status, body = self.api.request(
+            "GET", "/api/notifications?email=bea@autuni.ac.nz"
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(body["unread"], 1)
+        self.assertIn("WA-201", body["notifications"][0]["message"])
+
+    def test_notifications_are_per_email(self) -> None:
+        self._promote()
+        status, body = self.api.request(
+            "GET", "/api/notifications?email=someone@else.nz"
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(body["count"], 0)
+
+    def test_mark_read_clears_the_badge(self) -> None:
+        self._promote()
+        status, _ = self.api.request(
+            "POST", "/api/notifications/read", {"email": "bea@autuni.ac.nz"}
+        )
+        self.assertEqual(status, 200)
+        status, body = self.api.request(
+            "GET", "/api/notifications?email=bea@autuni.ac.nz"
+        )
+        self.assertEqual(body["unread"], 0)
+        self.assertEqual(body["count"], 1)
+
+
+class EmailOutboxTests(ServerTestCase):
+    """A promotion also produces the email that would be sent to the student."""
+
+    def test_promotion_sends_one_email(self) -> None:
+        status, booking = self.api.request("POST", "/api/bookings", booking_payload())
+        self.assertEqual(status, 201)
+        status, _ = self.api.request(
+            "POST",
+            "/api/waitlist",
+            booking_payload(
+                name="Bea Wait",
+                email="bea@autuni.ac.nz",
+                start=f"{BOOKING_DAY}T10:30:00",
+                end=f"{BOOKING_DAY}T11:30:00",
+            ),
+        )
+        self.assertEqual(status, 201)
+        status, _ = self.api.request("DELETE", f"/api/bookings/{booking['id']}")
+        self.assertEqual(status, 200)
+        status, body = self.api.request("GET", "/api/outbox")
+        self.assertEqual(status, 200)
+        self.assertEqual(len(body["messages"]), 1)
+        message = body["messages"][0]
+        self.assertEqual(message["to"], "bea@autuni.ac.nz")
+        self.assertIn("waitlisted", message["subject"])
+        self.assertIn("WA-201", message["body"])
+
+    def test_outbox_is_empty_without_a_promotion(self) -> None:
+        status, body = self.api.request("GET", "/api/outbox")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["messages"], [])
+
+
 class BookingApiTests(ServerTestCase):
     """FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-08, FR-09."""
 

@@ -59,6 +59,7 @@ class ServerFixture:
             db_path=database_path,
             rooms_path=ROOMS_PATH,
             rooms_extra_path=Path(database_path).with_name("rooms_added.json"),
+            outbox_dir=Path(database_path).with_name("outbox"),
             clock=lambda: FIXED_NOW,
         )
         host, port = self.server.server_address[:2]

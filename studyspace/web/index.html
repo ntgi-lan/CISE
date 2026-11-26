@@ -14,6 +14,9 @@
     </div>
     <div class="identity">
       <a class="ghost-button link-button" href="/admin.html">Staff admin</a>
+      <button type="button" id="notif-button" class="ghost-button" hidden>
+        Notifications <span id="notif-badge" class="badge" hidden>0</span>
+      </button>
       <span id="identity-label" class="identity-label">Not signed in</span>
       <button type="button" id="identity-button" class="ghost-button">Sign in</button>
       <button type="button" id="identity-signout" class="ghost-button" hidden>Sign out</button>
@@ -32,6 +35,8 @@
       </div>
     </div>
   </header>
+
+  <div id="toast" class="toast" hidden></div>
 
   <main>
     <section aria-labelledby="search-heading">
@@ -87,6 +92,11 @@
       </details>
     </section>
   </main>
+
+  <div id="notif-panel" class="notif-panel" hidden>
+    <h3>Notifications</h3>
+    <div id="notif-list"></div>
+  </div>
 
   <dialog id="identity-dialog" aria-labelledby="identity-title">
     <form id="identity-form" method="dialog">
